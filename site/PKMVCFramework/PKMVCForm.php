@@ -66,6 +66,16 @@ class BaseForm {
   protected $template = '';
 
   /**
+   * @var String: The various form attributes and their defaults...
+   */
+  protected $action = '';
+  protected $enctype = 'multipart/form-data';
+  protected $method = 'POST';
+  protected $name = '';
+  protected $class = '';
+  protected $id = '';
+
+  /**
    * @var Array: Ass Array of PKMVC Element/Form Input elements as name=>$el
    * Elements may be atomic HTML elements, or subforms containing other elements
    */
@@ -90,6 +100,56 @@ class BaseForm {
       $results[]= $obj;
     }
     return $results;
+  }
+
+  /**
+   * Return the open form string, based on attributes
+   */
+  public function openForm() {
+    $formTag = "\n<form class='{$this->class}' method='{$this->method}'
+      action='{$this->action}' id={$this->id}' enctype='{$this->enctype}' 
+        name='{$this->name}' >\n";
+    return $formTag;
+  }
+
+  /** Seems ridiculous, but for symetry...
+   * 
+   * @return string: Just the form close tag...
+   */
+  public function closeForm() {
+    return "\n</form>\n";
+  }
+
+  /** Add a PKMVC Form element to the assoc array collection, as name=>object
+   * pairs. Can be one at a time (if $key is a string) or multiple (if array)
+   * @param String|Array $key: Either the string key name, or an array
+   * @param BaseElement|null $val: Individual BaseElement instance, or null
+   */
+  public function addElement($key, $val=null) {
+    $setArr = array();
+    if (is_array($key)) {
+      $setArr = $key;
+    } else if (is_string($key)) {
+      $setArr[$key] = $val;
+    } else { #Bad input
+      throw new \Exception("Bad key input to add Element value");
+    }
+    foreach ($setArr as $skey => $sval) {
+      $this->elements[$skey] = $sval;
+    }
+    return $this->elements;
+  }
+
+  /** Returns an input element by name in assoc array
+   * 
+   * @param String $name
+   */
+  public function getElement($name) {
+    if (isset($this->elements[$name])) {
+      return $this->elements[$name];
+    } else {
+      return null;
+    }
   }
 }
 

@@ -47,9 +47,42 @@ Class ApplicationBase {
     $newResult = new RenderResult($result,$template);
     return $newResult;
   }
+
+  /**
+   * Holds the layout wrapper, to customize
+   * @var ControllerWrapper 
+   */
+  public static $layoutWrapper = null;
+
+  /**Allows the application to customize the layout wrapper before rendering.
+   * Like for adding menus, etc.
+   * @param ControllerWrapper $layoutWrapper: The added layout Wrapper;
+   */
+  public static function setLayoutWrapper($layoutWrapper) {
+    if (!($layoutWrapper instanceOf ControllerWrapper)) {
+      throw new \Exception("Illegal argument to setLayoutWrapper");
+    }
+    static::$layoutWrapper = $layoutWrapper;
+  }
+
+  public static function getLayoutWrapper() {
+    return static::$layoutWrapper;
+  }
   
+  /** Performs the layout first and then loads the result of the 
+   * controller/action. But we can inject other components to the
+   * layout controller, like menus, by setting and cusomizing the 
+   * layout controller first...
+   * @param String $controller: baseName of controller;
+   * @param String $action: basename of action or parial
+   * @param Array $args: Whatever, just passed to the controller action
+   * @return \PKMVC\RenderResult
+   */
   public static function layout($controller=null, $action=null, $args=null) {
-    $wrapper = LayoutController::get();
+    if (!static::$layoutWrapper) {
+      static::$layoutWrapper = LayoutController::get(); 
+    }
+    $wrapper = static::$layoutWrapper;
     $result = $wrapper->layoutAction($controller, $action, $args);
     $template = $wrapper->getLayout();
     $newResult = new RenderResult($result,$template);
@@ -69,7 +102,7 @@ Class ApplicationBase {
     } else if (is_string($key)) {
       $setArr[$key] = $val;
     } else { #Bad input
-      throw new \Exception("Bad input to set sessin value");
+      throw new \Exception("Bad input to set session value");
     }
     foreach ($setArr as $skey => $sval) {
       $_SESSION[$skey] = serialize($sval);
@@ -98,12 +131,12 @@ Class Application extends ApplicationBase {
   public function __construct(Array $args = null) {
   }
 
-  public function run( $action = null, $controller = null, $args=null) {
+  public function run( $controller = null, $action = null, $args=null) {
     #TODO: Lame attempt at session security. Redo
     session_start();
     session_regenerate_id();
 
-    $results = ApplicationBase::layout($controller, $action, $args);
+    $results = static::layout($controller, $action, $args);
     echo $results;
   }
 }

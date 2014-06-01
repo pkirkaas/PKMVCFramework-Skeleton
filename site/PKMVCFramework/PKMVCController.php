@@ -91,6 +91,77 @@ class BaseController {
   public $templates = array();
   public $template;
   public static $layout = 'layout';
+  /**
+   *
+   * @var Array of keyed arrays containing HTML -- filled in by anyone who wants
+   */
+  public static $slots = array();
+
+  /** Controllers normally only add content to their view templates. But by
+   * filling "slots", anyone can insert arbitrary HTML, which can be retrieved
+   * in any view. For example, a menu that appears above the controller/action
+   * view, but should be created by the controller.
+   * 
+   * @param array $keys: An indexed array of key names, to arbitrary depth, used
+   * to index the array of slots. Like, array('controllername', 'submenu'). But
+   * typically, only like "array('menu');"
+  
+   * @param String $val: The HTML string to put in the slot
+   */
+  public static function fillSlot(Array $keys, $val = null) {
+    $subarr = &static::$slots;
+    #Recursive function to fill the array to appropriate depth..
+    static::fillArr($subarr,$keys,$val);
+  }
+
+  /** General array utility to traverse down an array of keys to end, then
+   * set value.
+   * @param array $fillArr
+   * @param array $keys
+   * @param type $val
+   */
+  public static function fillArray(Array &$fillArr, Array $keys, $val=null) {
+    if (empty($keys) || !sizeof($keys)) { #Shouldn't be here
+      throw new \Exception("Empty Keys array");
+    }
+    $key = array_shift($keys);
+    if (empty($keys) || !sizeOf($keys)) { #Hit bottom
+      $fillArr[$key] = $val;
+      return;
+    }
+    if (!isset($fillArr[$key])) {
+      $fillArr[$key] = array();
+    }
+    static::fillArray($fillArr[$key], $keys, $val);
+  }
+
+  /** Retrieves the value at the end of the key chain. If not
+   * set, returns null. Do same here as set -- call recursive function...
+   * @param array $keys: Sequential indexed array of key names
+   */
+  public static function getSlot(Array $keys) {
+    $slotArr = static::$slots;
+    $val = static::getArrayDepth($slotArr, $keys);
+    return $val;
+  }
+
+  public static function getArrayDepth($slotArr, $keys) {
+    if (empty($keys) || !sizeof($keys)) { #Shouldn't be here
+      throw new \Exception("Empty Keys array");
+    }
+    $key = array_shift($keys);
+    if (!isset($fillArr[$key])) { //Not set, done, return null;
+      return null;
+    }
+    if (empty($keys) || !sizeOf($keys)) { #Hit bottom
+      if (isset($fillArr[$key])) { 
+        return $fillArr[$key];
+      } else {
+        return null;
+      }
+    } #keep trying...
+    return static::getArrayDepth($slotArr[$key],$keys);
+  }
 
   public static function getLayout() {
     return static::$layout;
@@ -114,19 +185,17 @@ class BaseController {
     return $this->template;
   }
 
+  /** Does nothing in base controller, but any controller can define this
+   * method, which will get called before each action in that controller
+   * @param type $args
+   */
   public function preExecute($args = null) {
-    /*
-    pkecho ($args);
-    if (!empty($args['template'])){ 
-      $this->templates[$args['methodName']]=$args['template'];
-    } //else if (empty($this->templates[$args['methodName']])) {
-     * *
-     */
-      //$this->templates[$args['methodName']] = 
-
-
   }
 
+  /** Does nothing in base controller, but any controller can define this
+   * method, which will get called after each action in that controller
+   * @param type $args
+   */
   public function postExecute($args = null) {
   }
 
@@ -143,9 +212,46 @@ class BaseController {
 
 
 class LayoutController extends BaseController {
+  protected $components = array();
+  public function __construct($args = null) {
+    parent::__construct($args);
+    $this->setParams($args);
+  }
+
+  public function setParams($args = null) {
+    if (!$args || !sizeof($args)) {
+      return;
+    }
+    foreach ($args as $key=>$val) { #Check keys and do something...
+      
+    }
+  }
+
+  /** Specifies additional components to be included in the layout
+   * -- like menus..
+   * @param Array $component: one or more associative compound array of:
+   * array('componentName'=>array('controllerName', 'actionName', $args);
+   */
+  public function setComponent(Array $component) {
+    foreach ($component as $key => $compound) {
+      $this->components[$key] = $compound;
+    }
+  }
+
+
+
   public function layoutAction($controller,$action,$args) {
     #return array("content" => "Such a shortcut!");
-    return array('content'=>ApplicationBase::exec($controller,$action,$args));
+    $data = array();
+    $data['content'] = ApplicationBase::exec($controller,$action,$args);
+    $components = $this->components;
+    #So absolutely NOT the way I want to leave this -- quick & dirty for now
+    foreach ($component as $key => $compound) {
+      $data[$key] = ApplicationBase::exec(array_shift($compound),
+                                          array_shift($compound),
+                                          array_shift($compound));
+    }
+    return $data;
 
   }
    

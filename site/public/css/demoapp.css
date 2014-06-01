@@ -1,0 +1,23 @@
+/**
+ * PKMVC Framework 
+ *
+ * @author    Paul Kirkaas
+ * @email     p.kirkaas@gmail.com
+ * @link     
+ * @copyright Copyright (c) 2012-2014 Paul Kirkaas. All rights Reserved
+ * @license   http://opensource.org/licenses/BSD-3-Clause  
+ *//* 
+    Created on : Jun 1, 2014, 1:20:34 PM
+    Author     : Paul
+*/
+
+form {
+  border: solid #aaa 1px;
+  border-radius: 5px;
+  margin: 5px;
+  padding: 5px;
+  box-shadow:  1px 1px 1px 1px #888;
+}
+
+
+

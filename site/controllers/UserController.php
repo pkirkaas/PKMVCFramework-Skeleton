@@ -33,7 +33,18 @@ class UserController extends BaseController {
    * Register a new user
    */
   public function registerAction() {
+    $form = new BaseForm();
+    $formElements = array(
+        'uname' => array('name'=>'uname', 'class'=>'input uname',
+            'placeholder' => "Enter User's Name"),
+        'password' => array('type' => 'password', 'name'=>'password',
+            'class'=>'input password', 'placeholder'=>"Enter a password"),
+        'email'=>array('type'=>'email', 'name'=>'email', 'class'=>'input email',
+            'placeholder'=>"Email Address"),
+    );
+    $form->addElement($formElements);
     $data = array();
+    $data['form'] = $form;
     $data['sample'] = "My Data from the User controller Index action!";
     return $data;
   }
