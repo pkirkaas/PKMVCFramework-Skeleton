@@ -1,0 +1,68 @@
+<!--
+  Default Menu Template for PKMVC Framework
+ * PKMVC Framework 
+ *
+ * @author    Paul Kirkaas
+ * @email     p.kirkaas@gmail.com
+ * @link     
+ * @copyright Copyright (c) 2012-2014 Paul Kirkaas. All rights Reserved
+ * @license   http://opensource.org/licenses/BSD-3-Clause  
+-->
+
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="<?php echo $this->url('home') ?>"><img src="<?php echo $this->basePath('img/dumbGraphic.png') ?>" alt="Quantum Profiles"/>&nbsp;<?php echo $this->translate('Quantum Profiles') ?></a>
+    </div>
+
+
+<? # Start: Here are the nav bar items and conditionals....  ?>
+
+
+
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <?
+        foreach ($menuroutes as $menuroute) {
+          $show = false;
+          if ($uid && $menuroute['logtype'] == 1)
+            $show = true;
+          if (!$uid && $menuroute['logtype'] == -1)
+            $show = true;
+          if (!$menuroute['logtype'] == -1)
+            $show = true;
+          if ($show) {
+            ?>
+        <!--
+            <li class="<?= $uripath == $menuroute['route'] ? 'active' : 'inactive' ?>">
+        -->
+            <li class="<?= "/$uribase" == $menuroute['route'] ? 'active' : 'inactive' ?>">
+              <a href="<?= $menuroute['route'] ?>" title='<?= $menuroute['title'] ?>'><?= $menuroute['label'] ?></a></li>
+          <?
+          }
+        }
+        ?>
+      </ul>
+      <div class="form-in-menu">
+<?
+if ($this->zfcUserIdentity()) {
+echo "Welcome, " . $this->ZfcUserDisplayName();
+} else {
+echo $this->zfcUserLoginWidget();
+}
+?>
+      </div>
+    </div><!--/.nav-collapse -->
+
+
+
+<? # Start: Here are the nav bar items and conditionals.... ?>
+
+
+  </div>
+</nav>

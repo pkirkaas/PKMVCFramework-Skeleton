@@ -1,0 +1,4 @@
+ErrorDocument 404 /
+Header set Access-Control-Allow-Origin: *
+RewriteEngine on
+RewriteRule ^([^.]+)$ /index.php

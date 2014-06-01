@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+<? static::addCss('/css/bootstrap.min.css'); ?>
+<? static::addCss('/css/bootstrap.min.css'); ?>
+<? static::addCss('/css/ui-lightness/jquery-ui-1.10.4.custom.min.css'); ?>
+<? static::addJs('/js/jquery-1.11.1.min.js'); ?>
+<? static::addJs('/js/jquery-ui-1.10.4.custom.min.js'); ?>
+<? static::addJs('/js/bootstrap.min.js'); ?>
+
+<?=static::getCss();?>
+
+<link type='text/css' rel='stylesheet' href='MyStyleSheet.css'/>
+<title>The PKMVC Demo App</title>
+</head>
+<body>
+<h1>This is the Layout!</h1>
+
+<?=$content?>
+<?=static::getJs();?>
+</body>
+</html>
+

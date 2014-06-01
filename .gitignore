@@ -1,0 +1,11 @@
+*.swp
+*.swo
+*.log
+logs/
+nbproject/
+logs/
+js/jquery-*.min.js
+bootstrap.*.min.css
+bootstrap.*css.map
+css/ui-lightness/*
+js/bootstrap.min.js
