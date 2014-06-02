@@ -118,7 +118,7 @@ class BaseController {
     }
     $subarr = &static::$slots;
     #Recursive function to fill the array to appropriate depth..
-    static::fillArr($subarr,$keys,$val);
+    static::fillArray($subarr,$keys,$val);
   }
 
   /** General array utility to traverse down an array of keys to end, then
@@ -268,7 +268,7 @@ class LayoutController extends BaseController {
     $data['content'] = ApplicationBase::exec($controller,$action,$args);
     $components = $this->components;
     #So absolutely NOT the way I want to leave this -- quick & dirty for now
-    foreach ($component as $key => $compound) {
+    foreach ($components as $key => $compound) {
       $data[$key] = ApplicationBase::exec(array_shift($compound),
                                           array_shift($compound),
                                           array_shift($compound));

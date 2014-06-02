@@ -57,8 +57,6 @@ namespace PKMVC;
  */
 
 class BaseForm {
-  protected $class;
-
   /**
    *
    * @var String: The template to use with the particular form class

@@ -10,6 +10,7 @@
  */
 /** Renders templates based on Controller data */
 namespace PKMVC;
+use PKMVC\BaseController;
 Class ViewRenderer {
   /**
    * @var Array of CSS paths to be included
@@ -205,7 +206,7 @@ Class ViewRenderer {
   #static methods and members
 
   /**
-   * Takes an array of path segments and returns a URL
+   * Takes an array of route path segments and returns a URL
    * @param array $segments: Indexed array of path components:
    * array('controllerName', 'actionName', 'argN...');
    * @return String
@@ -240,8 +241,9 @@ Class ViewRenderer {
    */
   public static function isActiveRoute ($segments, $cnt = 2 ) {
     $currentSegments = getRouteSegments(true);
+    pkdebug("currentSegments:", $currentSegments,"Segments", $segments);
     for ($i = 0 ; $i < $cnt; $i++) {
-      if (($i < 2) && (!isset($segments[$i]))) {
+      if (($i < 2) && (!isset($segments[$i]) || !$segments[$i])) {
         $segments[$i] = 'index';
       }
       if ($segments[$i] != $currentSegments[$i]) {

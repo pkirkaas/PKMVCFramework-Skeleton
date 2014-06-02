@@ -22,7 +22,7 @@ class Config {
   /** Contains the merged configuration files
    * @var array 
    */
-  protected static $config = array();
+  protected static $config = null;
 
   /** Merges the given config arg to the application configuration.
    * Can be an array, or a string identifying a config file to include.
@@ -34,7 +34,7 @@ class Config {
    *
    * @var String - default config path;
    */
-  protected static $configPath = '../configs';
+  protected static $configPath = 'configs';
 
   /** Scans the given directory (or default if null) for 
    * any php files, reads them, and merges their config data
@@ -49,7 +49,7 @@ class Config {
       $configPath = static::$configPath;
     } else {
       throw new \Exception("Cannot find config path: [" .
-      static::$configPath . "] OR [$configPath");
+      static::$configPath . "] OR [$configPath]");
     } #Okay, we have a valid file or dir
     $configFiles = array();
     if (is_file($configPath)) { #Single File
@@ -57,11 +57,14 @@ class Config {
     } else { #Assume dir; get all php files
       $fileNameArr = scandir($configPath);
       foreach ($fileNameArr as $fileName) {
-        if (substr($filename,-4) == '.php') { #PHP File, add to the list
+        if (substr($fileName,-4) == '.php') { #PHP File, add to the list
           $configFiles[] = $configPath.'/'.$fileName;
         }
       }
     } #We have an array of config files -- read them
+    if (static::$config === null) {
+      static::$config = array();
+    }
     $resConfig  = static::$config;
     foreach ($configFiles as $configFile) {
       $config = array();
@@ -84,6 +87,9 @@ class Config {
    * @return Array: The application configuration array
    */
   public static function getConfig() {
+    if (static::$config === null) {
+      static::loadConfigs();
+    }
     return static::$config;
   }
 

@@ -40,5 +40,9 @@ class AppController extends BaseController {
     $menu = ApplicationBase::exec('systempartial', 'basemenu');
     static::setSlot('top-menu', $menu);
   }
-  //put your code here
+
+  public function preExecute($args = null) {
+    $menu = ApplicationBase::exec('systempartial', 'basemenu');
+    static::setSlot('top-menu', $menu);
+  }
 }

@@ -19,49 +19,21 @@
       </button>
       <a class="navbar-brand" href="/"> <img src="/img/dumbGraphic.png" alt="Quantum Profiles"/>Quantum Profiles</a>
     </div>
-
-
-<? # Start: Here are the nav bar items and conditionals....  ?>
-
-
-
     <div class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
-        <?
-        foreach ($menuroutes as $menuroute) {
-          $show = false;
-          if ($uid && $menuroute['logtype'] == 1)
-            $show = true;
-          if (!$uid && $menuroute['logtype'] == -1)
-            $show = true;
-          if (!$menuroute['logtype'] == -1)
-            $show = true;
-          if ($show) {
-            ?>
-        <!--
-            <li class="<?= $uripath == $menuroute['route'] ? 'active' : 'inactive' ?>">
-        -->
-            <li class="<?=static::activeRoute() ?>">
-              <a href="<?= $menuroute['route'] ?>" title='<?= $menuroute['title'] ?>'><?= $menuroute['label'] ?></a></li>
-          <?
-          }
-        }
-        ?>
+        <?php foreach ($menu_items as $menu_item) { #Menu Item array ?>
+          <li class="<?= static::activeRoute($menu_item['route']) ?>">
+            <a href="<?= static::makeUrl($menu_item['route']) ?>" title='<?= $menu_item['title'] ?>'><?= $menu_item['label'] ?></a></li>
+
+        <?php } ?>
       </ul>
       <div class="form-in-menu">
-<?
-if ($this->zfcUserIdentity()) {
-echo "Welcome, " . $this->ZfcUserDisplayName();
-} else {
-echo $this->zfcUserLoginWidget();
-}
-?>
       </div>
     </div><!--/.nav-collapse -->
 
 
 
-<? # Start: Here are the nav bar items and conditionals.... ?>
+    <? # Start: Here are the nav bar items and conditionals....  ?>
 
 
   </div>

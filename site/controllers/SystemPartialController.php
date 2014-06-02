@@ -68,7 +68,6 @@ class SystemPartialController extends BaseController {
          $retItems[] = $menuItem;
          continue;
        }
-       throw new \Exception("Shouldn't be here...");
      }
      return $retItems;
   }

@@ -277,8 +277,7 @@ function getRouteSegments($default = false) {
   array_shift($anarr);
   if ($default) {
     for ($i = 0; $i < 2; $i++) {
-      if (!isset($anarr[$i])) {
-        #$anarr[$i] = $default;
+      if (!isset($anarr[$i]) || !$anarr[$i]) {
         $anarr[$i] = 'index';
       }
     }
