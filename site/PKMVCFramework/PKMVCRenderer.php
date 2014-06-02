@@ -11,36 +11,57 @@
 /** Renders templates based on Controller data */
 namespace PKMVC;
 Class ViewRenderer {
+  /**
+   * @var Array of CSS paths to be included
+   */
   protected static $csss = array();
+  /**
+   * @var Array of JS Paths to be included
+   */
   protected static $jss = array();
 
   public $controller;
   public $template; #A string that leads to a file in the form 'controller/view'
   public $data; //Data to render in template
+
+  /**
+   * @var String -- Same name as instance member/attribute. Allowed? No complaint
+   */
   public static $templateRoot;
 
+  #This section adds & manages CSS & JS files, removes dups, etc
+  /**
+   * Add a CSS include to the array of includes, if it doesn't already exist.
+   * @param string $css: Adds the CSS file to the list/array
+   */
   public static function addCss($css) {
-    foreach (static::$csss as $cssEl) {
-      if ($cssEl == $css) {
-        return;
-      }
+    if (in_array($css, static::$csss))  {
+      return;
     }
     static::$csss[] = $css;
   }
 
+  /** Sets the static CSS array totally
+   * 
+   * @param Array $csss: CSS Path array
+   */
   public function setCsss($csss = array()) {
     static::$csss = $csss;
     return static::$csss;
   }
+
   public function getCsss() {
     return static::$csss;
   }
 
+  /**
+   * As above with CSS - adds a JS filepath if it doesn't already exist
+   * @param string $js: JS File path
+   * @return type
+   */
   public static function addJs($js) {
-    foreach (static::$jss as $jsEl) {
-      if ($jsEl == $js) {
-        return;
-      }
+    if (in_array($js, static::$jss))  {
+      return;
     }
     static::$jss[] = $js;
     return static::$jss;
@@ -104,6 +125,7 @@ Class ViewRenderer {
    * @param String $menuTemplate: Name of menu template without .phtml suffix
    * @return String -- Menu for bootstrap
    */
+  /** Maybe not -- move to partial controller & slots...?
   public static function makeMenu($menuArray, $menuTemplate = null) {
     if (!$menuTemplate) {
       $menuTemplate = "default-menu";
@@ -115,10 +137,15 @@ Class ViewRenderer {
     
 
   }
+  */
 
   public function __construct(BaseController $controller = null) {
     $this->controller = $controller;
+    if (isset(static::$templateRoot)) {
+      $this->templateRoot = static::$templateRoot;
+    } else {
     $this->templateRoot = BASE_DIR . '/templates';
+    }
   }
 
   public function setTemplate($template) {
@@ -160,6 +187,12 @@ Class ViewRenderer {
     return $out;
   }
 
+  /** The standard templateName would be "$controllerName/$actionName"
+   * 
+   * @param type $templateName
+   * @return string full template file system path
+   * @throws \Exception
+   */
   public function getFileFromTemplateName($templateName) {
     $root = $this->templateRoot;
     $fpath = $root . "/$templateName" . '.phtml';
@@ -170,6 +203,55 @@ Class ViewRenderer {
   }
 
   #static methods and members
+
+  /**
+   * Takes an array of path segments and returns a URL
+   * @param array $segments: Indexed array of path components:
+   * array('controllerName', 'actionName', 'argN...');
+   * @return String
+   */
+  public static function makeUrl(Array $segments) {
+    $url = getBaseUrl();
+    foreach ($segments as $segment) {
+      $url .= "/$segment";
+    }
+    return $url;
+  }
+
+  /**
+   * Returns active or inactive for menu item class to show if current
+   * @param array $segments: Idx array of route segments
+   * @param int $cnt - How many segments to include to match?
+   * Default: 2, for controller/action
+   * @return string: active if match, else inactive
+   */
+  public static function activeRoute($segments, $cnt=2) {
+    if (static::isActiveRoute($segments, $cnt)) {
+      return "active";
+    }
+    return "inactive";
+  }
+
+  /**
+   * Just used by activeRoute above to determine to return string active
+   * @param type $segments
+   * @param type $cnt
+   * @return boolean: Does the route match or not?
+   */
+  public static function isActiveRoute ($segments, $cnt = 2 ) {
+    $currentSegments = getRouteSegments(true);
+    for ($i = 0 ; $i < $cnt; $i++) {
+      if (($i < 2) && (!isset($segments[$i]))) {
+        $segments[$i] = 'index';
+      }
+      if ($segments[$i] != $currentSegments[$i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+
 }
 
 class RenderResult {

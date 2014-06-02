@@ -265,14 +265,24 @@ function htmlclean ($arr, $usehtmlspecchars = false) {
  * indexed array of route segments. ex, for URL:
  * http://www.example.com/some/lengthy/path?with=get1&another=get2
  * ... returns: array('some', 'lengthy', 'path');
+ * $param Boolean|String $default: If the first two segments are missing, should
+ * we return the default value for them? Default false, otherwise probably 'index'
  * @return Array: Route Segments
  */
-function getRouteSegments() {
+function getRouteSegments($default = false) {
   $aseg = $_SERVER['REQUEST_URI'];
   $breakGets = explode('?',$aseg);
   $noGet = $breakGets[0];
   $anarr = explode('/',$noGet);
   array_shift($anarr);
+  if ($default) {
+    for ($i = 0; $i < 2; $i++) {
+      if (!isset($anarr[$i])) {
+        #$anarr[$i] = $default;
+        $anarr[$i] = 'index';
+      }
+    }
+  }
   return $anarr;
 }
 

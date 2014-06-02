@@ -104,11 +104,18 @@ class BaseController {
    * 
    * @param array $keys: An indexed array of key names, to arbitrary depth, used
    * to index the array of slots. Like, array('controllername', 'submenu'). But
-   * typically, only like "array('menu');"
+   * typically, only like "array('menu');", in which case the $keys arg can be
+   * just the key string.
   
    * @param String $val: The HTML string to put in the slot
    */
-  public static function fillSlot(Array $keys, $val = null) {
+  public static function setSlot($keys, $val = null) {
+    if (is_string($keys)) {
+      $keys = array($keys);
+    }
+    if (!is_array($keys)) { #That's weird...
+      throw new \Exception("Bad key value");
+    }
     $subarr = &static::$slots;
     #Recursive function to fill the array to appropriate depth..
     static::fillArr($subarr,$keys,$val);
@@ -137,9 +144,15 @@ class BaseController {
 
   /** Retrieves the value at the end of the key chain. If not
    * set, returns null. Do same here as set -- call recursive function...
-   * @param array $keys: Sequential indexed array of key names
+   * @param array $keys: Sequential indexed array of key names, or string
    */
-  public static function getSlot(Array $keys) {
+  public static function getSlot($keys) {
+    if (is_string($keys)) {
+      $keys = array($keys);
+    }
+    if (!is_array($keys)) { #That's weird...
+      throw new \Exception("Bad key value");
+    }
     $slotArr = static::$slots;
     $val = static::getArrayDepth($slotArr, $keys);
     return $val;
@@ -150,12 +163,12 @@ class BaseController {
       throw new \Exception("Empty Keys array");
     }
     $key = array_shift($keys);
-    if (!isset($fillArr[$key])) { //Not set, done, return null;
+    if (!isset($slotArr[$key])) { //Not set, done, return null;
       return null;
     }
     if (empty($keys) || !sizeOf($keys)) { #Hit bottom
-      if (isset($fillArr[$key])) { 
-        return $fillArr[$key];
+      if (isset($slotArr[$key])) { 
+        return $slotArr[$key];
       } else {
         return null;
       }
@@ -178,6 +191,15 @@ class BaseController {
     $cclass = get_called_class();
     return substr($cclass,-1*strlen('Controller'));
   }
+
+  /**
+   * Template path relative to the base template directory and without .phtml
+   * extension.
+   * By default 'controllerName/actionName', but for example could be just
+   * 'menu', which would load the "TEMPLATEBASE/menu.phtml" file.
+   * This is implemented by the ApplicationBase::exec method.
+   * @param String $template: The template used by the current action, 
+   */
   public function setTemplate($template) {
     $this->template = $template;
   }

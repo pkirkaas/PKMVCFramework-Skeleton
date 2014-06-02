@@ -17,9 +17,15 @@
 <title>The PKMVC Demo App</title>
 </head>
 <body>
+<div class='main-body'>
+<?=BaseController::getSlot('top-menu')?>
 <h1>This is the Layout!</h1>
 
+<div class='main-content'>
 <?=$content?>
+</div> <!-- close div main-content -->
+
+</div> <!-- close div main-body -->
 <?=static::getJs();?>
 </body>
 </html>

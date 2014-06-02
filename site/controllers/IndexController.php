@@ -18,7 +18,7 @@ use PKMVC\Application;
 use PKMVC\ControllerWrapper;
 use PKMVC\ViewRenderer;
 
-class IndexController extends BaseController {
+class IndexController extends AppController {
 
   /**
    * The main index action 
