@@ -3,3 +3,67 @@
 */
 ?>
 <h1>Register User</h1>
+<h3>Register User Form:</h3>
+<h4>But the sample is: [<?=$sample?>]</h4>
+<?= $form->openForm() ?>
+
+<?=$form->getElement('reg')?>
+<div class ="input-pair">
+  <div class="input-label">First Name:</div>
+  <?=$form->getElement('fname')?>
+</div> <!-- close div input-pair -->
+
+
+<div class ="input-pair">
+  <div class="input-label">Last Name:</div>
+  <?=$form->getElement('lname')?>
+</div> <!-- close div input-pair -->
+
+
+<div class ="input-pair">
+  <div class="input-label">User Name:</div>
+  <?=$form->getElement('uname')?>
+</div> <!-- close div input-pair -->
+
+
+<div class ="input-pair">
+  <div class="input-label">Email:</div>
+  <?=$form->getElement('email')?>
+</div> <!-- close div input-pair -->
+
+
+<div class ="input-pair">
+  <div class="input-label">Password:</div>
+  <?=$form->getElement('password')?>
+</div> <!-- close div input-pair -->
+
+
+
+<!--
+<div class ="input-pair">
+  <div class="input-label">A Chunk of Text:</div>
+  <?=$form->getElement('textarea')?>
+</div>
+-->
+<!-- close div input-pair -->
+
+
+
+<div class ="input-pair">
+  <div class="input-label">Submit the form?:</div>
+  <?=$form->getElement('submit')?>
+</div>
+<!-- close div input-pair -->
+
+
+
+<!--
+<div class ="input-pair">
+  <div class="input-label">Special Button Action:</div>
+  <?=$form->getElement('button')?>
+</div>
+-->
+<!-- close div input-pair -->
+
+
+<?= $form->closeForm()?>

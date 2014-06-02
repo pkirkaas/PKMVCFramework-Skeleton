@@ -86,15 +86,22 @@ class BaseForm {
    * THE TOP LEVEL FORM SHOULD EXECUTE THIS METHOD!
    * 
    * @param array $formData
+   * @param boolean $save (default: true): Should the object be saved now?
+   * In some cases, like user registration, might need additional processing 
+   * before saving?
    * @return type array of saved objects
    */
-  public function submitToClass(Array $formData) {
+  public function submitToClass(Array $formData, $save=true) {
+    pkdebug("Submitting:", $formData);
     $results = array();
     $formData = htmlclean($formData);
     $classNames = array_keys($formData); 
     foreach ($classNames as $className) {
       $obj = $className::get($formData[$className]);
-      $obj->save();
+      pkdebug("Trying to make an object of:  [$className] with data: ", $formData[$className], "The Object is:", $obj);
+      if ($save) {
+        $obj->save();
+      }
       $results[]= $obj;
     }
     return $results;
@@ -120,7 +127,9 @@ class BaseForm {
 
   /** Add a PKMVC Form element to the assoc array collection, as name=>object
    * pairs. Can be one at a time (if $key is a string) or multiple (if array)
-   * @param String|Array $key: Either the string key name, or an array
+   * @param String|Array $key: Either the string key name, or an array of keys
+   * and valuues. Values can be either instances of BaseElements, or arrays of
+   * values used to build an element
    * @param BaseElement|null $val: Individual BaseElement instance, or null
    */
   public function addElement($key, $val=null) {
@@ -133,7 +142,12 @@ class BaseForm {
       throw new \Exception("Bad key input to add Element value");
     }
     foreach ($setArr as $skey => $sval) {
-      $this->elements[$skey] = $sval;
+      if ($sval instanceOf BaseElement) {
+        $this->elements[$skey] = $sval;
+      } else if (is_array($sval)) { #Make an element from the data
+        $el = new BaseElement($sval);
+        $this->elements[$skey] = $el;
+      }
     }
     return $this->elements;
   }

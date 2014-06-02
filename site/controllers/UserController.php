@@ -30,22 +30,49 @@ class UserController extends AppController {
   }
 
   /**
-   * Register a new user
+   * Register a new user. Both presents the form to be completed, and also 
+   * processes the form after submission
    */
   public function registerAction() {
     $form = new BaseForm();
+
+    if (($_SERVER['REQUEST_METHOD'] == 'POST')) { //Save -- form submitted
+      $formData = array();
+      if (isset($_POST['user'])) {
+        $formData['user'] = $_POST['user'];
+        $user = $form->submitToClass($formData);
+        if (($user instanceOf User) && ($user->getId())) {
+          $userId = $user->getId();
+        }
+      }
+    }
+
+
+
+    
     $formElements = array(
-        'uname' => array('name'=>'uname', 'class'=>'input uname',
+        'reg' => array('name'=>'user[reg]', 'type'=>'hidden', 'value'=>'1'),
+        'fname' => array('name'=>'user[fname]', 'class'=>'input fname',
+            'placeholder' => "First Name"),
+        'lname' => array('name'=>'user[lname]', 'class'=>'input lname',
+            'placeholder' => "Last Name"),
+        'uname' => array('name'=>'user[uname]', 'class'=>'input uname',
             'placeholder' => "Enter User's Name"),
-        'password' => array('type' => 'password', 'name'=>'password',
+        'password' => array('type' => 'password', 'name'=>'user[cpassword]',
             'class'=>'input password', 'placeholder'=>"Enter a password"),
-        'email'=>array('type'=>'email', 'name'=>'email', 'class'=>'input email',
+        'email'=>array('type'=>'email', 'name'=>'user[email]', 'class'=>'input email',
             'placeholder'=>"Email Address"),
+        'submit'=>array('type'=>'submit', 'name'=>'user[do_reg]', 'class'=>'input submit',
+            'value'=>"Submit To Me!"),
+        'button'=>array('type'=>'button', 'name'=>'user[do_reg]', 'class'=>'input submit',
+            'value'=>"1", 'content'=>'Complete Registration'),
+        'textarea'=>array('type'=>'textarea', 'name'=>'textarea', 'class'=>'input textarea',
+            'value'=>"textareavalue", 'content'=>'I am a lengthy piece of text', 'cols'=>'80', 'rows'=>'12'),
     );
     $form->addElement($formElements);
     $data = array();
     $data['form'] = $form;
-    $data['sample'] = "My Data from the User controller Index action!";
+    $data['sample'] = "My Data from the User controller Register action!";
     return $data;
   }
 }

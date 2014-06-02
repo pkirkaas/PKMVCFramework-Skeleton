@@ -29,7 +29,7 @@ Abstract Class BaseUser extends BaseModel {
    * for identity (eg, username, or email, or ...? So can be overriden in 
    * a derived "MyUser" class
    */
-  protected $idfield = 'uname'; #Can be overriden in derived class
+  protected static $idfield = 'uname'; #Can be overriden in derived class
   protected static $memberDirects = array('id', 'uname', 'password', 'salt');
   protected static $memberObjects = array();
   protected static $memberCollections = array();
@@ -58,16 +58,25 @@ Abstract Class BaseUser extends BaseModel {
    *
    * @param String $cpassword: The cleartext password, which is never saved.
    *
-   * @param Array $optargs: Optional argument array.
+   * @param Array $optargs: Optional argument array. If the BaseUser class is
+   * subclassed by an application user class with additional fields (say, email
+   * or fname & lname, etc, these should be here...
    *
    *@return: The new user object if successful, else an error.
    *
    */
 
   public static function register($idvalue, $cpassword=null, $optargs = array()) {
+    $directs = static::getMemberDirects();
     $class = get_called_class();
-    $user = $class::get();
+    $user = static::get();
+    foreach ($optargs as $key => $val) {
+      if (in_array($key, $directs)) {
+        $user->$key = $val;
+      }
+    }
     $salt = static::makeSalt();
+    pkdebug("Registering: CLASS: [$class], salt: [$salt]");
     $idfield = static::$idfield;
     $setIdField = "set".toCamelCase($idfield);
     $user->$setIdField($idvalue);
@@ -78,6 +87,35 @@ Abstract Class BaseUser extends BaseModel {
     $user->save();
     return $user;
 
+  }
+
+  /** Overrides the base Object Model method if we are creating a new user-
+   * need to register first ...
+   * @param Array|Int|Null $idOrArray: If null, int ID, or array with an 
+   * ID key field set, just pass to parent. If an array of data without an
+   * ID, it's a new user, so must register first.
+   * 
+   * 
+   * Alternate: SUBMIT button is named 'do_reg' -- check for that in 
+   * input array...
+   * 
+   * @return BaseModel - the retrieved or created object
+   */
+  public static function get($idOrArray = null) {
+    pkdebug("In the BaseUser::get(), idORArr:",$idOrArray);
+    //if (!is_array($idOrArray) || isset($idOrArray['id'])) {
+    if (!is_array($idOrArray) || !isset($idOrArray['do_reg'])) {
+      #Whatever it is, not registering a new user, pass up
+      return parent::get($idOrArray);
+    }
+    #New User - register. Build Args
+    $cpassword = $idOrArray['cpassword'];
+    $idfield = static::$idfield;
+    $idvalue = $idOrArray[$idfield];
+    $user = static::register($idvalue,$cpassword,$idOrArray);
+    static::cacheObj($user);
+    pkdebug("Created and cached user???",$user);
+    return $user;
   }
 
 
@@ -153,7 +191,9 @@ Abstract Class BaseUser extends BaseModel {
   }
 
   public static function makeSalt() {
-    return base64_encode(mcrypt_create_iv(16, MCRYPT_DEV_URANDOM));
+    $salt = base64_encode(mcrypt_create_iv(16, MCRYPT_DEV_URANDOM));
+    pkdebug("SALT:", $salt);
+    return $salt;
   }
 
 }

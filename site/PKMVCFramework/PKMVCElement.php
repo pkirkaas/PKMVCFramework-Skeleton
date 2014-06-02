@@ -119,8 +119,9 @@ class BaseElement {
    * If key name is valid attribute, adds to attributer array and
    * cleans its value
    * @param array $args: Assoc array of name/value pairs
-   * FOR TEXTAREA INPUTS! Must use special val name: 'textAreaValue' to 
-   * be inclduded in the form!
+   * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
+   * be inclduded between the open and close tags
+   * TODO: Need to do more with different inputs - like button with type submit
    */
   public function setValues($args = array()) {
     foreach ($args as $key =>$val) {
@@ -143,6 +144,7 @@ class BaseElement {
    */
   public function __toString() {
 
+
     if ($this->inputStr) {
       return $this->inputStr;
     }
@@ -155,7 +157,7 @@ class BaseElement {
    * @return String: HTML representing control
    */
   public function buildHtml() {
-    $specialTypes = array('textarea','boolean');
+    $specialTypes = array('textarea','boolean','button');
     $atts = $this->attributes; #Include in input
     $type = $this->type;
     //Start building...
@@ -163,16 +165,18 @@ class BaseElement {
     foreach ($atts as $aname => $aval) {
       $retstr .= " $aname=\"$aval\" ";
     }
-    if (!in_array($type,$specialTypes)) {
-      if ($type === 'textarea') { #Special Value...
+    if (in_array($type,$specialTypes)) {
+      if (($type === 'textarea') || ($type==='button')) { #Special Value...
         $val = '';
-        if (isset($this->otherAttributes['textAreaValue'])) {
-          $val = $this['textAreaValue'];
+        if (isset($this->otherAttributes['content'])) {
+          $val = $this->otherAttributes['content'];
         }
-        $retstr ="\n<textarea $retstr >$val</textarea>\n";
+        $retstr ="\n<$type $retstr >$val</$type>\n";
       } else if ($type === 'boolean') { #Custum control implemented with two inputs
         $retstr =  static::makeBooleanInput($this->attributes);
       }
+    } else { #Not a special type, make a regular input of the type..
+      $retstr = "\n<input type='$type' $retstr />";
     }
     return $retstr;
   }

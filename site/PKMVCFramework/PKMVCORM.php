@@ -117,7 +117,7 @@ class BaseModel {
 #arrays of ID's of object instantiations.
 
   /** Checks if an object is already loaded, if so, returns it, if not
-   *  loads it and registers it, if no $id, creates it, and returns it.
+   *  loads it and registers/caches it, if no $id, creates it, and returns it.
    *  <p>Objects should not be created by <tt>$obj = new ObjClass();</tt>.
    * Rather: <tt>$obj = ObjClass::get();</tt>. 
    * <p>::get() can take three types of arguments:
@@ -148,6 +148,7 @@ class BaseModel {
    * @return BaseModel instance
    */
   public static function get($idOrArray = null) {
+    pkdebug("Yep, here with idorarr:", $idOrArray);
     $id = null;
     $class = get_called_class();
     $baseName = static::getBaseName();
@@ -188,6 +189,26 @@ class BaseModel {
       return $obj;
     }
     throw new Exception("Shouldn't be here: Class:[$class], idOrArray: [" . pkvardump($idOrArray) . ']');
+  }
+
+
+  /**
+   * If an object is created and saved outside the standard "::get()" function,
+   * we still want to record/persist it with the "instantiations" array so we
+   * don't duplicate it.
+   * @param \PKMVC\BaseModel $obj
+   */
+  public static function cacheObj(BaseModel $obj) {
+    if (! ($id = $obj->getId())) { #Not persisted yet, so nothing to persist.
+      return;
+    }
+    $baseName = static::getBaseName();
+    #Have data array with non-empty 'id' - check if in instantiations cache
+    if (!isset(static::$instantiations[$baseName])) {
+      static::$instantiations[$baseName] = array();
+    }
+    static::$instantiations[$baseName][$id] = $obj;
+    return;
   }
 
 
@@ -339,8 +360,8 @@ class BaseModel {
    }
 
 
-  /** Returns the default value of member directs. Currently just
-   * the static array
+  /** Returns the member directs. Merges the heirarch
+   * 
    */
   public static function getMemberDirects() {
     //return static::$memberDirects;

@@ -241,7 +241,6 @@ Class ViewRenderer {
    */
   public static function isActiveRoute ($segments, $cnt = 2 ) {
     $currentSegments = getRouteSegments(true);
-    pkdebug("currentSegments:", $currentSegments,"Segments", $segments);
     for ($i = 0 ; $i < $cnt; $i++) {
       if (($i < 2) && (!isset($segments[$i]) || !$segments[$i])) {
         $segments[$i] = 'index';

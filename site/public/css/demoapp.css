@@ -19,5 +19,34 @@ form {
   box-shadow:  1px 1px 1px 1px #888;
 }
 
+.input-pair {
+  border: solid #faa 1px;
+  border-radius: 5px;
+  margin: 5px;
+  padding: 5px;
+  box-shadow:  1px 1px 1px 1px #f88;
+  display: inline-block;
+}
+
+.input-label {
+  font-size: large;
+  font-family: verdana;
+  font-weight: bold;
+  display: inline-block;
+  border: solid #aaf 1px;
+  border-radius: 5px;
+  margin: 5px;
+  padding: 5px;
+  box-shadow:  1px 1px 1px 1px #88f;
+}
+
+.input {
+  display: inline-block;
+  border: solid #aaf 1px;
+  border-radius: 5px;
+  margin: 5px;
+  padding: 5px;
+  box-shadow:  1px 1px 1px 1px #88f;
+}
 
 
