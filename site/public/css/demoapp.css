@@ -19,6 +19,13 @@ form {
   box-shadow:  1px 1px 1px 1px #888;
 }
 
+.proud {
+  border: solid blue 1px;
+  background-color: #9f9;
+  color: #faa;
+  margin: 3px;
+  padding: 3px;
+}
 .input-pair {
   border: solid #faa 1px;
   border-radius: 5px;

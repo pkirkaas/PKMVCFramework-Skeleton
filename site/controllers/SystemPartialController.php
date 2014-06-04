@@ -40,7 +40,13 @@ class SystemPartialController extends BaseController {
     $config = Config::getConfig();
     $default_menu = $config['menus']['default_menu'];
     $showItems = static::filterMenuItems($default_menu);
-    $data = array('menu_items'=>$showItems);
+    $data = array();
+    $data['menu_items']=$showItems;
+    $user = BaseUser::getCurrent();
+    if ($user instanceOf BaseUser) {
+      $data['handle'] = $user->getHandle();
+    }
+    
     return $data;
   }
 

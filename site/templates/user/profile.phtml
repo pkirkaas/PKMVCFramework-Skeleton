@@ -1,0 +1,15 @@
+<h1>Yes, the "Profile" view template...</h1>
+
+<?= $form->openForm() ?>
+<div class ="input-pair">
+  <div class="input-label">User Name:</div>
+  <?=$form->getElement('uname')?>
+</div> <!-- close div input-pair -->
+
+<div class ="input-pair">
+  <div class="input-label">Submit the form?:</div>
+  <?=$form->getElement('submit')?>
+</div>
+<!-- close div input-pair -->
+<?= $form->closeForm()?>
+

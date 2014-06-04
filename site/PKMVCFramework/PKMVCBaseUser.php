@@ -141,7 +141,6 @@ Abstract Class BaseUser extends BaseModel {
     $class = get_called_class();
     $paramArr = array($idfield => $idvalue);
     $users = static::getObjectsThatMatch($paramArr);
-    var_dump("USERS THAT MATCH:", $users);
     if (!is_array($users) || !sizeOf($users) || 
             !(($users[0] instanceOf $class))) {
       return "User Name [$idfield] Not Found";
@@ -162,7 +161,6 @@ Abstract Class BaseUser extends BaseModel {
     $id = $user->getId();
     Application::setSessionVal('userId', $id);
     Application::setSessionVal('userClass', get_called_class());
-    var_dump($_SESSION);
     return $user;
   }
 
@@ -171,7 +169,6 @@ Abstract Class BaseUser extends BaseModel {
    */
   public static function getCurrent() {
     $userId = Application::getSessionVal('userId'); #Just abstracts session
-    var_dump($_SESSION);
     $userClass = Application::getSessionVal('userClass'); #Just abstracts session
     if (!$userId) {
       return null;
@@ -190,6 +187,14 @@ Abstract Class BaseUser extends BaseModel {
 
   public static function logout() {
     Application::setSessionVal('userId');
+  }
+
+  /**
+   * Return string of username/handle
+   */
+  public function getHandle() {
+    $handleField = static::$idfield; 
+    return $this->$handleField;
   }
 
   /**

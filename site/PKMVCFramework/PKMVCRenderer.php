@@ -284,7 +284,7 @@ class RenderResult {
   public $template;
   public $viewRenderer;
 
-  public function __construct($result = null, $template = null) {
+  public function __construct($result = null, $template = null, $templateRoot = null) {
     $this->result = $result;
     $this->template = $template;
   }

@@ -116,4 +116,23 @@ class UserController extends AppController {
     $_SESSION = array();
     static::redirect();
   }
+
+  /**
+   * Edit User Info and multiple profiles...
+   */
+  public function profileAction() {
+    $form = new BaseForm();
+    $data = array();
+    $formElements = array(
+        'uname'=>array('name'=>'user[uname]', 'placeholder'=>'User Name'),
+        'profiles'=>array('type'=>'subform'),
+        'submit'=>array('type'=>'submit', 'name'=>'user[do_reg]', 'class'=>'input submit',
+            'value'=>"Submit To Me!"),
+        );
+    $form->addElement($formElements);
+    $data['form'] = $form;
+    return $data;
+
+
+  }
 }

@@ -157,7 +157,7 @@ class BaseElement {
    * @return String: HTML representing control
    */
   public function buildHtml() {
-    $specialTypes = array('textarea','boolean','button');
+    $specialTypes = array('textarea','boolean','button','subform');
     $atts = $this->attributes; #Include in input
     $type = $this->type;
     //Start building...
@@ -174,6 +174,8 @@ class BaseElement {
         $retstr ="\n<$type $retstr >$val</$type>\n";
       } else if ($type === 'boolean') { #Custum control implemented with two inputs
         $retstr =  static::makeBooleanInput($this->attributes);
+      } else if ($type === 'subform') {
+
       }
     } else { #Not a special type, make a regular input of the type..
       $retstr = "\n<input type='$type' $retstr />";

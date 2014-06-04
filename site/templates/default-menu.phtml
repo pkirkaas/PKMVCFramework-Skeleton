@@ -26,6 +26,7 @@
             <a href="<?= static::makeUrl($menu_item['route']) ?>" title='<?= $menu_item['title'] ?>'><?= $menu_item['label'] ?></a></li>
 
         <?php } ?>
+          <? if (!empty($handle)) echo "<li class='proud'>Welcome, $handle</li>"; ?>
       </ul>
       <div class="form-in-menu">
       </div>
