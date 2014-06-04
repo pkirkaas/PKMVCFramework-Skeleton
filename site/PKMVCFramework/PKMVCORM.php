@@ -81,7 +81,9 @@ class BaseModel {
    * the external class name and the field name in the foreign object that points to
    * this object. Example: If this class contains an "items" collection attribute, it
    * would have an entry in this array of:
-   * <tt>'items'=>array('classname'=>'Item', 'foreignkey'=>'shopping_cart_id')</tt>
+   * <tt>'items'=>array('classname'=>'Item', 'foreignkey'=>'shopping_cart_id',
+   * 'cascade'=>true)</tt>. Where 'cascade' is optional, default to 'true', which
+   * means, should a delete in this object also delete the collection item.
    */
   protected static $memberCollections = array(); #Array of names of object collections
 

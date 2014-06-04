@@ -136,10 +136,12 @@ Abstract Class BaseUser extends BaseModel {
   public static function login($idvalue, $cpassword=null, $args = null) {
     #First check if username exists, if so, get salt, compute password
     #and see if match...
+    //die("Trying to log in...");
     $idfield = static::$idfield;
     $class = get_called_class();
     $paramArr = array($idfield => $idvalue);
-    $users = getObjectsThatMatch($paramArr);
+    $users = static::getObjectsThatMatch($paramArr);
+    var_dump("USERS THAT MATCH:", $users);
     if (!is_array($users) || !sizeOf($users) || 
             !(($users[0] instanceOf $class))) {
       return "User Name [$idfield] Not Found";
@@ -148,13 +150,19 @@ Abstract Class BaseUser extends BaseModel {
     $tstUser = $users[0];
     $salt = $tstUser->getSalt();
     $tstPassword = static::makePassword($cpassword,$salt);
+    $storedPassword = $tstUser->getPassword();
+
     if (!($tstPassword === $tstUser->getPassword())) { #no match
+      echo "<h2>Passwords didn't match: input cpassword: [$cpassword], tstPwd: [$tstPassword]; retrieved enc pwd: [$storedPassword]</h2>"; 
       return "Passwords didn't match!";
     }
     #We're good? Persist and return
+    echo "<h2>Passwords DID match: input cpassword: [$cpassword], tstPwd: [$tstPassword]; retrieved enc pwd: [$storedPassword]</h2>"; 
     $user = $tstUser;
     $id = $user->getId();
     Application::setSessionVal('userId', $id);
+    Application::setSessionVal('userClass', get_called_class());
+    var_dump($_SESSION);
     return $user;
   }
 
@@ -163,10 +171,12 @@ Abstract Class BaseUser extends BaseModel {
    */
   public static function getCurrent() {
     $userId = Application::getSessionVal('userId'); #Just abstracts session
+    var_dump($_SESSION);
+    $userClass = Application::getSessionVal('userClass'); #Just abstracts session
     if (!$userId) {
       return null;
     }
-    $user = static::get($userId);
+    $user = $userClass::get($userId);
     if ($user instanceOf BaseUser) {
       return $user;
     } else {

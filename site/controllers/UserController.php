@@ -10,6 +10,7 @@ use PKMVC\LayoutController;
 use PKMVC\BaseElement;
 use PKMVC\BaseDbElement;
 use PKMVC\BaseForm;
+use PKMVC\BaseUser;
 use PKMVC\BaseModel;
 use PKMVC\RenderResult;
 use PKMVC\PartialSet;
@@ -74,5 +75,45 @@ class UserController extends AppController {
     $data['form'] = $form;
     $data['sample'] = "My Data from the User controller Register action!";
     return $data;
+  }
+  public function editAction() {
+
+  }
+  public function loginAction() {
+    $data = array();
+    $msg = "All Good...";
+    $form = new BaseForm();
+    if (($_SERVER['REQUEST_METHOD'] == 'POST')) { //Save -- form submitted
+      $formData = array();
+      if (isset($_POST['user'])) {
+        $formData['user'] = $_POST['user'];
+        $uname = $formData['user']['uname'];
+        $cpassword = $formData['user']['cpassword'];
+        $user = User::login($uname,$cpassword);
+        if ($user instanceOf BaseUser) {
+          static::redirect(); #Go Home...
+        }
+        $msg = "Login Failure!!!";
+      } else {
+        $msg = "Hmmm ... Didn't even get post data...";
+      }
+    }
+    $formElements = array(
+        'uname'=>array('name'=>'user[uname]', 'placeholder'=>'User Name'),
+        'cpassword'=>array('name'=>'user[cpassword]', 'type'=>'password',
+            'placeholder'=>'Password'),
+        'submit'=>array('type'=>'submit', 'name'=>'user[do_reg]', 'class'=>'input submit',
+            'value'=>"Submit To Me!"),
+        );
+    $form->addElement($formElements);
+    $data['form'] = $form;
+    $data['msg'] = $msg;
+    return $data;
+
+  }
+
+  public function logoutAction() {
+    $_SESSION = array();
+    static::redirect();
   }
 }

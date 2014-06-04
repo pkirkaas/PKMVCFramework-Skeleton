@@ -255,9 +255,32 @@ Class ViewRenderer {
 
 }
 
+/**
+ * Renders results into a template. Normally called with a the results of a
+ * controller action, but can be used to render any data - the first argument
+ * to the constructor ($result) is an associative array of key/value pairs,
+ * the secocond is the name of a phtml template which presents the content of
+ * the $result array with local variables that have the name of the array keys.
+ * 
+ * Important to note the instance of RenderResult does not evaluate the content
+ * until it is echoed and the "__toString()" magic method is called. Which means
+ * if a member of the "$result" array is an object which has a reference
+ * elsewhere in the application, if some value of that object is changed AFTER
+ * the RenderResult instance is created, but BEFORE it is actually rendered, the
+ * output of RenderResult will reflect the modified value, not the value it was
+ * created with. 
+ */
+
 class RenderResult {
 
+  /**
+   * @var Array: Associative array of key/value pairs, to be rendered into 
+   * the template -- ONLY WHEN THE __toString() magic method is called...
+   */
   public $result;
+  /**
+   * @var String: The name of the phtml template to be used in the rendering.
+   */
   public $template;
   public $viewRenderer;
 

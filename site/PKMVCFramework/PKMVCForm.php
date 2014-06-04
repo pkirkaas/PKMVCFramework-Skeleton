@@ -59,7 +59,7 @@ namespace PKMVC;
 class BaseForm {
   /**
    *
-   * @var String: The template to use with the particular form class
+   * @var String: The template to use with the particular form instance
    */
   protected $template = '';
 
@@ -72,6 +72,14 @@ class BaseForm {
   protected $name = '';
   protected $class = '';
   protected $id = '';
+  protected $renderResult = null;
+
+  /**
+   *
+   * @var Array: An optional associative array of data to be rendered with the
+   * associated template, if rendering directly from the form instance.
+   */
+  protected $renderData = array();
 
   /**
    * @var Array: Ass Array of PKMVC Element/Form Input elements as name=>$el
@@ -86,12 +94,15 @@ class BaseForm {
    * THE TOP LEVEL FORM SHOULD EXECUTE THIS METHOD!
    * 
    * @param array $formData
+   * @param string $action: method - what should be done with this data? 
+   * Default: if empty/false, create object/save. 
    * @param boolean $save (default: true): Should the object be saved now?
    * In some cases, like user registration, might need additional processing 
    * before saving?
    * @return type array of saved objects
    */
-  public function submitToClass(Array $formData, $save=true) {
+
+  public function submitToClass(Array $formData, $action=null, $save=true) {
     pkdebug("Submitting:", $formData);
     $results = array();
     $formData = htmlclean($formData);
@@ -152,6 +163,17 @@ class BaseForm {
     return $this->elements;
   }
 
+  /**
+   * If the instance has an instantiated ::$renderResult member, or $resultData
+   * and $templateMembers, render.
+   */
+  public function __toString() {
+    if (!($this->renderResult)) {
+      $this->renderResult = new RenderResult($this->renderData, $this->template);
+    }
+    return $this->renderResult->__toString();
+  }
+
   /** Returns an input element by name in assoc array
    * 
    * @param String $name
@@ -163,6 +185,89 @@ class BaseForm {
       return null;
     }
   }
+
+
+  ########## Methods to support repeating/scrolling forms/subforms - with
+  ### support for templates. Uses supporting JS library
+
+  
+/**
+ * Sets up repeating subforms/collections for form display/processing, and
+ * calls $this->editSubformItem() n+1 times to present the n existing items
+ * in the collection, and a blank template to add additional items (implemented
+ * through JavaScript). Adds a "New Item" button for the collection.
+ *
+ * Whatever calls this method should have a view template to inject the results
+ * into.
+ *
+ * @param String $collName: The name of the collection as represented in
+ * the containing object. Ex, containing class is "Mom", collection is
+ * "Mom->$kids", $collName arg is "kids".
+ * @param String $itemType: The Model Class/type. If collection name is "kids", the
+ * item type might be: "Person"
+ * @param String $itemTemplate: the name of the template to use to display the 
+ * subform of $item components.
+ *
+ * TODO: Make generally recursive, for deep nesting, if desired. Totally missing 
+ * an abstraction layer which needs to be implemented at some point.
+ *
+ * @param Array $items: Array/Collection of subform objects
+ * @return Array: The associative data array of results. Each key should be echoed 
+ * in a template, each value should be echoable -- that is, be a string or have a
+ * __toString implementation. The class PartialSet, for example, extends ArrayObject,
+ * and implements __toString by calling __toString on every element.
+
+ 
+ 
+ The HTML string representing the subform, with existing items,
+ * create/delete buttons, etc.
+ */
+
+public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = null, Array $items = array()) {
+  $data = array();
+  $data[$collName] = new PartialSet();
+  $seqName = $collName.'_idx';
+  $idx = 0;
+  if (!empty($items) && sizeof($items)) { #Got something...
+    foreach ($items as $item) {
+      if ($item instanceOf BaseModel) {
+        $itemEls = static::editSubformItem($itemType, $item, $idx);
+        $data[$collName][] = new RenderResult($itemEls, $itemTemplate);
+          //ApplicationBase::exec('magicpartial', 'editfoodgroupconsideration', $foodgroupconsideration, $idx);
+          //new static ($collName, $collType, $item, $idx);
+        $idx++;
+      }
+    }
+  }
+  $data[$seqName] = $idx;
+  #Make an item template:
+  $item_tpl = static::editSubformItem($itemType);
+  $data[$collName.'_template'] = new RenderResult($item_tpl, $itemTemplate);
+}
+
+
+/**
+ * The individual row/subform management/display. Called by ::multiSubformsSetup(),
+ * to display an individual component of the collection, and a hidden template.
+ *
+ * @return Array: Associative array of data, to be later included into a RenderResult with 
+ * a view template.
+ */
+
+  public static function editSubformItem($itemType, BaseModel $item = null,  $idx='__template__') {
+    $data = array();
+    $seqName = $itemType."_idx";
+    $data[$seqName] = $idx;
+    //If no item object, make a subform template
+    if (empty($item) || !($item instanceOf BaseModel)) { //make template
+      $item =  $itemType::get(); #Make new empty instance
+    }
+    $data['item'] = $item;
+    $data['id'] = $item->getId();
+    //$data['fieldsToShow'] = $this->fieldsToShow;
+    return $data;
+  }
+   
 }
 
 /**

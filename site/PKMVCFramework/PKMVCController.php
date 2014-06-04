@@ -121,6 +121,50 @@ class BaseController {
     static::fillArray($subarr,$keys,$val);
   }
 
+  /**
+   * Redirect to the specified route or none - optionally, pass on GET params
+   * @param Array|String|Null $route: If empty, Home. If string, the controller
+   * assuming "index" action. Otherwise, if array of strings, build full URL
+   * @param boolean|String|Array $withGets: If false/empty, no gets. IF BOOLEAN true, the
+   * current GET params. If String or Array, add the specified GETS
+   * 
+   * TODO: Run params through a "clean" function (urlencode)
+   */
+  public static function redirect($route = null, $withGets = null) {
+    $url = getBaseUrl() .'/';
+    $path = '';
+    $getStr = '';
+    if ($route) {
+      if (is_string($route)) {
+        $path = $route;
+      } else if (is_array($route)) {
+        $path = implode('/', $route);
+      }
+      if ($withGets) { #If true, current GETS; if string or array, with that
+        if (is_string($withGets)) {
+          if (!(substr($withGets,0,1)=='?')) {
+            $getStr = '?'.$withGets;
+          } else { #is a get string, already with '?'
+            $getStr = $withGets;
+          }
+        } else if (is_array($withGets)) { #assoc array of get key/vals
+          #$getStr = '?' . implode('&',$withGets);
+          $getStr = '?';
+          foreach ($withGets as $key=>$val) {
+            $getStr .= "$key=$val&";
+          }
+          $getStr = substr($getStr, 0,-1);
+        } else { #Just True? Use current gets...
+          $getStr = '?'. $_SERVER['QUERY_STRING'];
+        }
+      }
+    }
+    $redirectUrl = $url.$path.$getStr;
+    pkdebug("The attempted redirect URL: [$redirectUrl]");
+    header("Location: $redirectUrl");
+    return;
+  }
+
   /** General array utility to traverse down an array of keys to end, then
    * set value.
    * @param array $fillArr
