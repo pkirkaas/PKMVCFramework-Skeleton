@@ -56,6 +56,9 @@ form {
   box-shadow:  1px 1px 1px 1px #88f;
 }
 
+.form-template {
+  display: none;
+}
 
 html body div .button {
   display: inline-block;
@@ -88,5 +91,13 @@ html body div .button:hover {
 html body div .button:active {
    border-top-color: #1b435e;
    background: #1b435e;
-  }
+}
+
+.base-collection-set, .base-item-el {
+  border: solid #aaf 1px;
+  border-radius: 5px;
+  margin: 5px;
+  padding: 5px;
+  box-shadow:  1px 1px 1px 1px #88f;
+}
 

@@ -12,5 +12,15 @@
  * JavaScript/AJAX operations, especially for forms, etc. Assumes jQuery
  */
 
-alert("Hmm, at least this JS is loading...");
+$(function() {
+  //On Load; jQuery
+});
 
+//Generic button attachments to add/delete items from form collections, based
+//on standard button and collection div names...
+/**
+ * Delete the associated form item row/component
+ */
+$('.base-collection-set').on('click', '.delete-item-button', function() {
+    $(this).closest('div.base-item-el').remove();
+  });

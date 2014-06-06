@@ -128,8 +128,9 @@ class UserController extends AppController {
     $form->addElement($formElements);
 
     #Add multi-form ....
+    $profiles_cnt = 0; #Increment when have existing profiles...
     $subform = BaseForm::multiSubFormsSetup('profiles', 'Profile', 'forms/profilelineitem' /*How are items passed here?*/);
-    $subformdisp = new RenderResult($subform, 'forms/profilesubform');
+    $subformdisp = new RenderResult(array('idx'=>$profiles_cnt, 'collection_subform'=>(new RenderResult($subform, 'forms/profilesubform'))), 'forms/basecollection');
     $form ->addElement('psubform',$subformdisp);
 
 

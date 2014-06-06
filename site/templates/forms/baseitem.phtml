@@ -1,0 +1,11 @@
+<?  if (!empty($idx) && ($idx == '__template__')) { ?>
+  <div class='form-template' data-item-template="
+       hello, this is a try..." 
+<? } ?>
+<div class='base-item-el'>
+  <?=$item_data?>
+  <div class='button delete-item-button'>Delete Item?</div>
+</div>
+<?  if (!empty($idx) && ($idx == '__template__')) { ?>
+"</div> <!-- CLOSE div class='form-template' -->
+<? } ?>

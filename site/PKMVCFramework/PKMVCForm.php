@@ -242,9 +242,11 @@ public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = 
     }
   }
   $data[$seqName] = $idx;
+  $data['idx'] = $idx;
   #Make an item template:
   $item_tpl = static::editSubformItem($itemType);
-  $data[$collName.'_template'] = new RenderResult($item_tpl, $itemTemplate);
+  $data[$collName.'_template'] = new RenderResult(array("item_data"=>(new RenderResult($item_tpl, $itemTemplate)),'idx'=>'__template__'), 'forms/baseitem');
+  $data['item_form_template'] = new RenderResult(array("item_data"=>(new RenderResult($item_tpl, $itemTemplate)),'idx'=>'__template__'), 'forms/baseitem');
   return $data;
 }
 
@@ -261,6 +263,7 @@ public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = 
     $data = array();
     $seqName = $itemType."_idx";
     $data[$seqName] = $idx;
+    $data['idx'] = $idx;
     //If no item object, make a subform template
     if (empty($item) || !($item instanceOf BaseModel)) { //make template
       $item =  $itemType::get(); #Make new empty instance
