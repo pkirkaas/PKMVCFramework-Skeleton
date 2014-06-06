@@ -87,6 +87,7 @@ html body div .button:hover {
    border-top-color: #28597a;
    background: #28597a;
    color: #ccc;
+   cursor: pointer;
    }
 html body div .button:active {
    border-top-color: #1b435e;

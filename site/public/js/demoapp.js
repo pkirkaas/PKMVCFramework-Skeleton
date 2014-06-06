@@ -24,3 +24,30 @@ $(function() {
 $('.base-collection-set').on('click', '.delete-item-button', function() {
     $(this).closest('div.base-item-el').remove();
   });
+
+
+$('.add-item-button').on('click', newItemFromTemplate);
+
+function newItemFromTemplate() {
+  //alert("Clicked add item button..");
+  var template = $(this).closest('.base-collection-set').find('.form-template').data('item-template');
+  console.log("And this is...",this,"; and the template is:",template);
+  var idx = parseInt($(this).attr('data-idx'));
+  var newstr = template.replace(/__template__/g, idx);
+  idx++;
+  $(this).attr('data-idx', idx);
+  console.log("The New Template:", newstr);
+  //$('.base-collection-set').append(newstr);
+  $(this).before(newstr);
+
+}
+
+
+
+
+
+
+
+
+
+

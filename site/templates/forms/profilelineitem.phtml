@@ -1,5 +1,4 @@
 <?
 use PKMVC\BaseElement;
 ?>
-<h1>Yes, profile line item template. It's a start...</h1>
-<div class='input-label'>Profile Name?</div><?= new BaseElement(array('name'=>"user[profiles][name][$idx]", 'value'=>$item->getName()))?>
+<div class='input-label'>Profile Name?</div><?= new BaseElement(array('name'=>"user[profiles][$idx][name]", 'value'=>$item->getName()))?>
