@@ -117,11 +117,12 @@ class UserController extends AppController {
    * Edit User Info and multiple profiles...
    */
   public function profileAction() {
-    $form = new BaseForm();
+    $user = User::getCurrent();
+    $form = new BaseForm($user);
     $data = array();
     $formElements = array(
-        'uname'=>array('name'=>'user[uname]', 'placeholder'=>'User Name'),
-        'profiles'=>array('type'=>'subform'),
+        'uname'=>array('name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
+     //   'profiles'=>array('type'=>'subform','name'=>'user[profiles]', 'items'=>$user->getProfiles()),
         'submit'=>array('type'=>'submit', 'name'=>'user[do_reg]', 'class'=>'input submit',
             'value'=>"Submit To Me!"),
         );
@@ -129,9 +130,12 @@ class UserController extends AppController {
 
     #Add multi-form ....
     $profiles_cnt = 0; #Increment when have existing profiles...
-    $subform = BaseForm::multiSubFormsSetup('profiles', 'Profile', 'forms/profilelineitem' /*How are items passed here?*/);
-    $subformdisp = new RenderResult(array('idx'=>$profiles_cnt, 'collection_subform'=>(new RenderResult($subform, 'forms/profilesubform'))), 'forms/basecollection');
-    $form ->addElement('psubform',$subformdisp);
+    //$subform = BaseForm::multiSubFormsSetup('profiles', 'Profile', 'forms/profilelineitem' /*How are items passed here?*/);
+    //$subformdisp = new RenderResult(array('idx'=>$profiles_cnt, 'collection_subform'=>(new RenderResult($subform, 'forms/profilesubform'))), 'forms/basecollection');
+    //$form ->addElement('psubform',$subformdisp);
+    $this->processPost($user, $form);
+    //pkdebug("POST:", $_POST,"Form:", $form, "User:", $user);
+    //pkdebug("POST:", $_POST);
 
 
     

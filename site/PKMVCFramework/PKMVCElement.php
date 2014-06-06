@@ -180,6 +180,7 @@ class BaseElement {
     } else { #Not a special type, make a regular input of the type..
       $retstr = "\n<input type='$type' $retstr />";
     }
+    $retstr .= "\n";
     return $retstr;
   }
 

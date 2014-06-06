@@ -273,6 +273,43 @@ class BaseController {
 
   public function getActionName() {
   }
+  
+  /**
+   * Conventionally, when a controller action presents a form, submitting that
+   * form will return to the same action, with POST data. 
+   * @param String|BaseModel $entity: The name of the "entity"/object/class --
+   * like, 'user', or an instance of that object
+   * @return BaseModel instance: The object updated by the Post data
+   * TODO: (Or, with validation errors)
+   */
+  public function processPost($entity, $form = null) {
+    if (is_string($entity)) {
+      $obj = new $entity();
+      $uc_classname = unCamelCase($entity);
+    } else if ($entity instanceOf BaseModel) {
+      $obj = $entity;
+      $uc_classname = unCamelCase(get_class($entity));
+    } else {
+      throw new \Exception ("Invalid Entity submitted to processPost");
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] == 'POST') { //Save 
+      $formData = array();
+      pkdebug("Request is POST: is uc_classname: [$uc_classname]");
+      if (isset($_POST[$uc_classname])) {
+        pkdebug("Indeed it IS!! And the post data for it is:", $_POST[$uc_classname], "AND POST IS:", $_POST);
+        $formData[$uc_classname] = $_POST[$uc_classname];
+        if (!$form) {
+          $form = new BaseForm($obj);
+        }
+        $obj = $form->submitToClass($formData);
+        if (($obj instanceOf BaseModel) && ($obj->getId())) {
+          $id = $obj->getId();
+        }
+      }
+    }
+    return $obj;
+  }
 
 }
 

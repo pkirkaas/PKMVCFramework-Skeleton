@@ -76,7 +76,6 @@ Abstract Class BaseUser extends BaseModel {
       }
     }
     $salt = static::makeSalt();
-    pkdebug("Registering: CLASS: [$class], salt: [$salt]");
     $idfield = static::$idfield;
     $setIdField = "set".toCamelCase($idfield);
     $user->$setIdField($idvalue);
@@ -102,7 +101,6 @@ Abstract Class BaseUser extends BaseModel {
    * @return BaseModel - the retrieved or created object
    */
   public static function get($idOrArray = null) {
-    pkdebug("In the BaseUser::get(), idORArr:",$idOrArray);
     //if (!is_array($idOrArray) || isset($idOrArray['id'])) {
     if (!is_array($idOrArray) || !isset($idOrArray['do_reg'])) {
       #Whatever it is, not registering a new user, pass up
@@ -114,7 +112,6 @@ Abstract Class BaseUser extends BaseModel {
     $idvalue = $idOrArray[$idfield];
     $user = static::register($idvalue,$cpassword,$idOrArray);
     static::cacheObj($user);
-    pkdebug("Created and cached user???",$user);
     return $user;
   }
 
@@ -207,7 +204,6 @@ Abstract Class BaseUser extends BaseModel {
 
   public static function makeSalt() {
     $salt = base64_encode(mcrypt_create_iv(16, MCRYPT_DEV_URANDOM));
-    pkdebug("SALT:", $salt);
     return $salt;
   }
 

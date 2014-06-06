@@ -150,7 +150,7 @@ class BaseModel {
    * @return BaseModel instance
    */
   public static function get($idOrArray = null) {
-    pkdebug("Yep, here with idorarr:", $idOrArray);
+    //pkdebug("HERE:, IDORARR:", $idOrArray);
     $id = null;
     $class = get_called_class();
     $baseName = static::getBaseName();
@@ -1172,7 +1172,6 @@ class BaseModel {
    * @return PDOStatement or false;
    */
   public function saveCollection($fieldname, $deleteAbsent = true) {
-    //pkdebug("SAVE COLLECTION FOR fieldname $fieldname");
     $thisClassName = get_class($this);
     if (is_string($fieldname) && property_exists($this, $fieldname)) {
       $objArr = $this->$fieldname;
@@ -1191,7 +1190,6 @@ class BaseModel {
       if ($deleteAbsent) {
         $strSql = "DELETE FROM `$tableName` WHERE `$foreignKey` = :owner";
         $argArr = array('owner' => $this->getId());
-      //pkdebug("THE FROM EMPTY: DELETES: ", $strSql, $argArr, "THIS:",$this);
         $stmt = prepare_and_execute($strSql, $argArr);
         if (!$stmt) return false;
         return $stmt;
@@ -1217,7 +1215,6 @@ class BaseModel {
     #instances that are no longer part of this collection. 
     #here, we are not deleting them from the instantiations cache...
     if ($deleteAbsent) {
-      //pkdebug ("Trying to delete absent ids:",$ids);
       $ret = idxArrayToPDOParams($ids);
       $paramStr = $ret['paramStr'];
       $argArr = $ret['argArr'];
@@ -1225,7 +1222,6 @@ class BaseModel {
 
       $strSql = "DELETE FROM `$tableName` WHERE `$foreignKey` = :owner AND  " .
               " `id` NOT IN ($paramStr)";
-      //pkdebug("THE DELETES: ", $strSql, $argArr);
       $stmt = prepare_and_execute($strSql, $argArr);
       if (!$stmt) return false;
       return $stmt;

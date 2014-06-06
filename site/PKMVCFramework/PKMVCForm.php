@@ -52,6 +52,12 @@ namespace PKMVC;
  * BaseForm can be extended to include particular controls, and a dedicated
  * template.
  * 
+ * The BaseForm class also tries to do some clever things to handle common
+ * situations - like if the form maps to an object/class, you can instantiate
+ * the base form with an object. In which case it will create a default
+ * hidden input element with the name "objName[id]", set it to the value of the
+ * object ID, and output it with the ->openForm() method.
+ * 
  * TODO: Figure out how to integrate this with repeating
  * subforms/collections...
  */
@@ -62,6 +68,11 @@ class BaseForm {
    * @var String: The template to use with the particular form instance
    */
   protected $template = '';
+  /**
+   * @var BaseModel: Often, a form will be based on a BaseModel object. In
+   * which case, set it and we do some assistance.
+   */
+  protected $baseObj = null;
 
   /**
    * @var String: The various form attributes and their defaults...
@@ -102,14 +113,28 @@ class BaseForm {
    * @return type array of saved objects
    */
 
+  public function setBaseObj($baseObj) {
+    $this->baseObj = $baseObj;
+    return $this->baseObj;
+  }
+
+  public function getBaseObj() {
+    return $this->baseObj;
+  }
+
+  public function __construct(BaseModel $baseObj = null) {
+    $this->baseObj = $baseObj;
+  }
+
   public function submitToClass(Array $formData, $action=null, $save=true) {
     pkdebug("Submitting:", $formData);
     $results = array();
     $formData = htmlclean($formData);
     $classNames = array_keys($formData); 
     foreach ($classNames as $className) {
+      pkdebug("Trying to make/save an object of:  [$className] with data: ", $formData[$className]);
       $obj = $className::get($formData[$className]);
-      pkdebug("Trying to make an object of:  [$className] with data: ", $formData[$className], "The Object is:", $obj);
+      pkdebug("The Object is:", $obj);
       if ($save) {
         $obj->save();
       }
@@ -121,10 +146,13 @@ class BaseForm {
   /**
    * Return the open form string, based on attributes
    */
-  public function openForm() {
+  public function openForm($echoId = true) {
     $formTag = "\n<form class='{$this->class}' method='{$this->method}'
       action='{$this->action}' id={$this->id}' enctype='{$this->enctype}' 
         name='{$this->name}' >\n";
+    if ($echoId) {
+      $formTag .= $this->getElement('id');
+    }
     return $formTag;
   }
 
@@ -183,6 +211,11 @@ class BaseForm {
   public function getElement($name) {
     if (isset($this->elements[$name])) {
       return $this->elements[$name];
+    } else if (($this->baseObj) && ($name == 'id')) {
+      $className = $this->baseObj->getBaseName();
+      return new BaseElement(array('type'=>'hidden',
+          'name'=>unCamelCase($className)."[id]", 'value'=>$this->baseObj->getId()));
+
     } else {
       return null;
     }
