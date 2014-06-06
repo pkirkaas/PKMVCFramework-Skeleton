@@ -20,7 +20,7 @@ use PKMVC\ViewRenderer;
 define('DB_NAME',	'pkirkaas_demo');
 define('DB_SERVER','localhost');
 define('DB_USER','root');
-define('DB_PASSWORD','mysql');
+define('DB_PASSWORD','');
 
 
 
@@ -32,4 +32,4 @@ require_once __DIR__.'/controllers/UserController.php';
 require_once __DIR__.'/controllers/SystemPartialController.php';
 require_once __DIR__.'/models/DEMOORM.php';
 require_once __DIR__.'/models/User.php';
-ViewRenderer::$templateRoot = __DIR__.'/templates';
+ViewRenderer::$defaultTemplateRoot = __DIR__.'/templates';

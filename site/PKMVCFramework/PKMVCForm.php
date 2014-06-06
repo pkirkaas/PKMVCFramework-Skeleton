@@ -158,6 +158,8 @@ class BaseForm {
       } else if (is_array($sval)) { #Make an element from the data
         $el = new BaseElement($sval);
         $this->elements[$skey] = $el;
+      } else { 
+        $this->elements[$skey] = $sval;
       }
     }
     return $this->elements;
@@ -243,6 +245,7 @@ public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = 
   #Make an item template:
   $item_tpl = static::editSubformItem($itemType);
   $data[$collName.'_template'] = new RenderResult($item_tpl, $itemTemplate);
+  return $data;
 }
 
 

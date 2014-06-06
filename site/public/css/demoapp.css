@@ -57,3 +57,36 @@ form {
 }
 
 
+html body div .button {
+  display: inline-block;
+   border-top: 1px solid #96d1f8;
+   background: #656ad6;
+   background: -webkit-gradient(linear, left top, left bottom, from(#973e9c), to(#656ad6));
+   background: -webkit-linear-gradient(top, #973e9c, #656ad6);
+   background: -moz-linear-gradient(top, #973e9c, #656ad6);
+   background: -ms-linear-gradient(top, #973e9c, #656ad6);
+   background: -o-linear-gradient(top, #973e9c, #656ad6);
+   padding: 5px 10px;
+   -webkit-border-radius: 8px;
+   -moz-border-radius: 8px;
+   border-radius: 8px;
+   -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+   -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+   box-shadow: rgba(0,0,0,1) 0 1px 0;
+   text-shadow: rgba(0,0,0,.4) 0 1px 0;
+   color: white;
+   font-size: 14px;
+   font-family: Helvetica, Arial, Sans-Serif;
+   text-decoration: none;
+   vertical-align: top;
+   }
+html body div .button:hover {
+   border-top-color: #28597a;
+   background: #28597a;
+   color: #ccc;
+   }
+html body div .button:active {
+   border-top-color: #1b435e;
+   background: #1b435e;
+  }
+

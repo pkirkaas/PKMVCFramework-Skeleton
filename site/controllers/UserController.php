@@ -47,10 +47,6 @@ class UserController extends AppController {
         }
       }
     }
-
-
-
-    
     $formElements = array(
         'reg' => array('name'=>'user[reg]', 'type'=>'hidden', 'value'=>'1'),
         'fname' => array('name'=>'user[fname]', 'class'=>'input fname',
@@ -130,6 +126,14 @@ class UserController extends AppController {
             'value'=>"Submit To Me!"),
         );
     $form->addElement($formElements);
+
+    #Add multi-form ....
+    $subform = BaseForm::multiSubFormsSetup('profiles', 'Profile', 'forms/profilelineitem' /*How are items passed here?*/);
+    $subformdisp = new RenderResult($subform, 'forms/profilesubform');
+    $form ->addElement('psubform',$subformdisp);
+
+
+    
     $data['form'] = $form;
     return $data;
 

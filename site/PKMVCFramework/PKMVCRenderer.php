@@ -28,7 +28,9 @@ Class ViewRenderer {
   /**
    * @var String -- Same name as instance member/attribute. Allowed? No complaint
    */
-  public static $templateRoot;
+  //public static $templateRoot;
+  public static $defaultTemplateRoot;
+  public $templateRoot;
 
   #This section adds & manages CSS & JS files, removes dups, etc
   /**
@@ -140,14 +142,26 @@ Class ViewRenderer {
   }
   */
 
-  public function __construct(BaseController $controller = null) {
+  public function __construct(BaseController $controller = null,
+          $templateRoot = null, $template = null) {
     $this->controller = $controller;
-    if (isset(static::$templateRoot)) {
-      $this->templateRoot = static::$templateRoot;
+    if ($templateRoot) {
+      $this->templateRoot = $templateRoot;
+    } else if (isset(static::$defaultTemplateRoot)) {
+      $this->templateRoot = static::$defaultTemplateRoot;
     } else {
     $this->templateRoot = BASE_DIR . '/templates';
     }
+
+    if ($template) {
+      $this->template = $template;
+    }
   }
+
+  public function setTemplateRoot($templateRoot) {
+    $this->templateRoot = $templateRoot;
+  }
+
 
   public function setTemplate($template) {
     $this->template = $template;
