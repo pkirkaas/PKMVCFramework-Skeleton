@@ -21,13 +21,51 @@ namespace PKMVC;
  */
 class BaseElement {
 
-  /** An array of valid HTML attributes - if they are included as param keys,
+  /** An array of valid HTML input attributes - if they are included as param keys,
    * will be part of the input element. 'data-XXX' are special cases
    * Let's deal with 'select' & such later....
    */
-  protected static $validAttributes = array('label', 'name', 'class', 'id',
-          'title', 'style', 'value', 'placeholder', 'step', 'disabled',
-      'checked', 'spellcheck', 'rows', 'cols', 'wrap');
+  protected static $validAttributes = array(
+      'accesskey', 'class', 'contenteditable', 'contextmenu', 'dir',
+      'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck',
+      'style', 'tabindex', 'title', 'translate', 'label', 'name',  
+      'checked', 'accept',  'alt', 'autocomplete', 'autofocus',
+      'form', 'formaction', 'formenctype', 'formmethod', 'formnovalidate',
+      'formtarget', 'height', 'list', 'max', 'maxlength', 'min', 'multiple',
+      'step', 'type', 'value', 'width', 'for'
+      );
+
+  /**
+   *
+   * @var array: Valid form element types (Added my own: boolean, HTML, subform)
+   */
+  protected static $validInputs = array(
+      'input', 'textarea', 'button', 'select', 'option', 'optgroup',
+      'fieldset', 'label','boolean', 'html', 'subform',
+      );
+
+  /** 
+   * @var array: If element instance of "input", what are valid input types? 
+   */
+  protected static $validTypes = array(
+    'checkbox', 'color', 'date', 'datetime', 'datetime-local', 'email', 'file',
+    'hidden', 'image', 'month', 'number', 'password', 'radio', 'range', 'reset',
+    'search', 'submit', 'tel', 'text', 'time', 'url', 'week', 'button',
+  );
+
+  /**
+   *
+   * @var array: elements that are not self-closing, need a closing tag, and
+   * assume that the special attribute 'content' is set and will be echoed
+   * between the open/close tags
+   */
+  protected static $contentInputs = array('textarea','button', 'label',
+      );
+  /**
+   * @var array: Element names/types treated specially when rendered
+   */
+  protected static $specialInputs = array('boolean',
+      'select','subform', 'html', 'label');
  /**
   * Array of validators for this element. These are just for individual elements.
   * The form class will have its own validators for form-wide validation, for
@@ -39,7 +77,8 @@ class BaseElement {
    * the "boolean" checkbox type
    * @var type 
    */
-  protected $type; 
+  protected $type = 'text'; #default
+  protected $input = 'input'; #Default. Could be button, etc 
 
   /**
    * @var array: Assoc. array of attribute names/values
@@ -101,6 +140,13 @@ class BaseElement {
    * See doc for buildHtml() below for details
    */
   public function __construct($args = array()) {
+    
+    if (isset($args['input'])) {
+      $this->input = $args['input'];
+    } else { #default to text
+      $this->input = 'input';
+      $args['input'] = 'input';
+    }
     if (isset($args['type'])) {
       $this->type = $args['type'];
     } else { #default to text
@@ -125,7 +171,9 @@ class BaseElement {
    */
   public function setValues($args = array()) {
     foreach ($args as $key =>$val) {
-      if (static::isValidAttribute($key)) {
+      if ($key == 'input') {
+        $this->input = $val;
+      } else if (static::isValidAttribute($key)) {
         $this->attributes[$key] = static::clean($val);
       } else { #Leftover args -- save for later?
         #But don't know what they are, so don't clean
@@ -157,28 +205,29 @@ class BaseElement {
    * @return String: HTML representing control
    */
   public function buildHtml() {
-    $specialTypes = array('textarea','boolean','button','subform');
+    $specialInputs = array('textarea','boolean','button','select','subform');
     $atts = $this->attributes; #Include in input
     $type = $this->type;
+    $input = $this->input; #Maybe button?
     //Start building...
     $retstr ='';
     foreach ($atts as $aname => $aval) {
       $retstr .= " $aname=\"$aval\" ";
     }
-    if (in_array($type,$specialTypes)) {
-      if (($type === 'textarea') || ($type==='button')) { #Special Value...
+    if (in_array($input,$specialTypes)) {
+      if (($input === 'textarea') || ($input==='button')) { #Special Value...
         $val = '';
         if (isset($this->otherAttributes['content'])) {
           $val = $this->otherAttributes['content'];
         }
-        $retstr ="\n<$type $retstr >$val</$type>\n";
-      } else if ($type === 'boolean') { #Custum control implemented with two inputs
+        $retstr ="\n<$input $retstr >$val</$input>\n";
+      } else if ($input === 'boolean') { #Custum control implemented with two inputs
         $retstr =  static::makeBooleanInput($this->attributes);
-      } else if ($type === 'subform') {
+      } else if ($input === 'subform') {
 
       }
     } else { #Not a special type, make a regular input of the type..
-      $retstr = "\n<input type='$type' $retstr />";
+      $retstr = "\n<'$input' type='$type' $retstr />";
     }
     $retstr .= "\n";
     return $retstr;

@@ -213,18 +213,19 @@ function pkvardump($arg, $disableXdebug = true) {
 //Outputs to the destination specified by $useDebugLog
 function pkdebugOut($str) {
   if (true) {
-    try {
+  //  try {
       //$logpath = $_SERVER['DOCUMENT_ROOT'].'/../app/logs/app.log';
       $logpath = $_SERVER['DOCUMENT_ROOT'] . '/logs/app.log';
+      echo "LOGPATH: [$logpath]";
       $fp = fopen($logpath, 'a+');
       if (!$fp)
         throw new Exception("Failed to open DebugLog [$logpath] for writing");
       fwrite($fp, $str);
       fclose($fp);
-    } catch (Exception $e) {
-      error_log("Error Writing to Debug Log: " . $e);
-      return false;
-    }
+   // } catch (Exception $e) {
+    //  error_log("Error Writing to Debug Log: " . $e);
+     // return false;
+    //}
   } else {
     error_log($str);
   }
@@ -424,3 +425,14 @@ function filter_request($var, $filter = FILTER_DEFAULT, $options = null) {
  * @return type
  */
 function isAssoc($array) { return ($array !== array_values($array));}
+
+/**
+ * Determines if the value can be output as a string.
+ * @param type $value
+ * @return boolean: Can the value be output as a string?
+ */
+function stringable($value) {
+    if (is_object($value) and method_exists($value, '__toString')) return true;
+    if (is_null($value)) return true;
+    return is_scalar($value);
+}

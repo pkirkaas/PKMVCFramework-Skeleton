@@ -87,6 +87,12 @@ class BaseForm {
 
   /**
    *
+   * @var type Is this the top level form - that is, not a subform? 
+   */
+  protected $topForm = false;
+
+  /**
+   *
    * @var Array: An optional associative array of data to be rendered with the
    * associated template, if rendering directly from the form instance.
    */
@@ -122,25 +128,69 @@ class BaseForm {
     return $this->baseObj;
   }
 
-  public function __construct(BaseModel $baseObj = null) {
-    $this->baseObj = $baseObj;
+  /**
+   * Sets the attributes of the form
+   * @param array $attributes: Associative array of attribute names/values
+   * If "elements" is a key, the value must be an assoc array of name/value
+   * pairs, where the name key is the form element name and the value is either
+   * an element instance or an array that can be used to create the element
+   * @return \PKMVC\BaseForm
+   */
+  public function setAttributes(Array $attributes) {
+    if (!$attributes || !is_array($attributes)) {
+      return $this;
+    }
+    $properties = array_keys(get_object_vars($this));
+    foreach ($attributes as $key =>$value) {
+      if (($key == 'element') || ($key == 'elements')) {
+        $this->setElement($value);
+        contininue;
+      }
+      if (in_array($key,$properties)) {
+        $this->$key = $value;
+      }
+    }
+
+    return $this;
+  }
+
+  /** Initialize with a model object, or an assoc key/value array
+   * 
+   * @param \PKMVC\BaseModel|Array $args: If assoc array, keys should
+   * correspond to member attribute names. Can include array of elements
+   * @return null;
+   */
+  public function __construct($args = null) {
+    if (!$args) {
+      return;
+    }
+    if ($args instanceOf BaseModel) {
+      $this->baseObj = $baseObj;
+      return;
+    }
+    if (is_array($args) ) {
+
+    }
   }
 
   public function submitToClass(Array $formData, $action=null, $save=true) {
-    pkdebug("Submitting:", $formData);
+    //pkdebug("Submitting:", $formData);
     $results = array();
     $formData = htmlclean($formData);
     $classNames = array_keys($formData); 
     foreach ($classNames as $className) {
       pkdebug("Trying to make/save an object of:  [$className] with data: ", $formData[$className]);
       $obj = $className::get($formData[$className]);
-      pkdebug("The Object is:", $obj);
       if ($save) {
         $obj->save();
       }
       $results[]= $obj;
+      //Debug....
+      break;
     }
-    return $results;
+    //return $results;
+      //pkdebug("The RETURNING Object is:", $obj);
+    return $obj;
   }
 
   /**
@@ -156,11 +206,21 @@ class BaseForm {
     return $formTag;
   }
 
-  /** Seems ridiculous, but for symetry...
+  /** Close tag, and default "submit" button if none set. Can negate outputting
+   * any submit button by adding an empty/null element named "submit".
    * 
-   * @return string: Just the form close tag...
+   * @return string:  HTML  form close tag, and submit button...
    */
   public function closeForm() {
+    $submitEl = $this->getElement('submit');
+    if ($submitEl === false) { #Hasn't been set; create default
+      $submitEl = new BaseElement(array('submit'));
+    }
+      if (!$submitEl) { #submitEl 
+
+    }
+    
+    if ($k)
     return "\n</form>\n";
   }
 
@@ -171,7 +231,13 @@ class BaseForm {
    * values used to build an element
    * @param BaseElement|null $val: Individual BaseElement instance, or null
    */
-  public function addElement($key, $val=null) {
+  public function setElement($key = null, $val=null) {
+    return $this->addElement($key,$val);
+  }
+  public function addElement($key = null, $val=null) {
+    if (!$key) {
+      return $this->elements;
+    }
     $setArr = array();
     if (is_array($key)) {
       $setArr = $key;
@@ -193,22 +259,53 @@ class BaseForm {
     return $this->elements;
   }
 
+  public function setTemplate($template) {
+    return ($this->template = $template);
+  }
+  public function getTemplate() {
+    return $this->template;
+  }
+  public function setRenderResult(RenderResult $renderResult) {
+    return ($this->renderResult = $renderResult);
+  }
+  public function getRenderResult() {
+    return $this->renderResult;
+  }
   /**
    * If the instance has an instantiated ::$renderResult member, or $resultData
    * and $templateMembers, render.
    */
   public function __toString() {
-    if (!($this->renderResult)) {
-      $this->renderResult = new RenderResult($this->renderData, $this->template);
+    if ($this->getRenderResult()) {
+      return $this->renderResult->__toString();
     }
-    return $this->renderResult->__toString();
+    if ($this->template) {
+      if (!($this->renderResult)) {
+        $this->renderResult = new RenderResult($this->renderData, $this->template);
+      }
+      return $this->renderResult->__toString();
+    }
+    #No template, no renderResult - output default, which is all elements  
+    
   }
 
-  /** Returns an input element by name in assoc array
+  /**
+   * Outputs the default format if there is no template -- just all the elements
+   * wrapped in HTML
+   */
+  public function outputDefault() {
+
+  }
+
+  /** Returns an input element by name in assoc array. Can be empty/null if
+   * explicitly set to null, or returns boolean false if not set at all.
    * 
    * @param String $name
    */
   public function getElement($name) {
+    if (!array_key_exists($name, $this->elements)) {
+      return false; #Distinguish between explicitly set NULL and not set at all
+    }
     if (isset($this->elements[$name])) {
       return $this->elements[$name];
     } else if (($this->baseObj) && ($name == 'id')) {

@@ -150,9 +150,9 @@ class BaseModel {
    * @return BaseModel instance
    */
   public static function get($idOrArray = null) {
-    //pkdebug("HERE:, IDORARR:", $idOrArray);
-    $id = null;
     $class = get_called_class();
+    pkdebug("HERE:, CLASS: [$class]; IDORARR:", $idOrArray);
+    $id = null;
     $baseName = static::getBaseName();
     if (empty($idOrArray)) { #create new empty object
       return new $class();

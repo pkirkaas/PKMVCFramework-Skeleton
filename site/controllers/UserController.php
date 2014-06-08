@@ -120,10 +120,12 @@ class UserController extends AppController {
     $user = User::getCurrent();
     $form = new BaseForm($user);
     $data = array();
+    $user = $this->processPost($user, $form);
     $formElements = array(
         'uname'=>array('name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
+        'email'=>array('name'=>'user[email]', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
      //   'profiles'=>array('type'=>'subform','name'=>'user[profiles]', 'items'=>$user->getProfiles()),
-        'submit'=>array('type'=>'submit', 'name'=>'user[do_reg]', 'class'=>'input submit',
+        'submit'=>array('type'=>'submit', 'name'=>'user[submit]', 'class'=>'input submit',
             'value'=>"Submit To Me!"),
         );
     $form->addElement($formElements);
@@ -133,8 +135,7 @@ class UserController extends AppController {
     //$subform = BaseForm::multiSubFormsSetup('profiles', 'Profile', 'forms/profilelineitem' /*How are items passed here?*/);
     //$subformdisp = new RenderResult(array('idx'=>$profiles_cnt, 'collection_subform'=>(new RenderResult($subform, 'forms/profilesubform'))), 'forms/basecollection');
     //$form ->addElement('psubform',$subformdisp);
-    $this->processPost($user, $form);
-    //pkdebug("POST:", $_POST,"Form:", $form, "User:", $user);
+    pkdebug("After Process Post; Form:", $form, "User:", $user);
     //pkdebug("POST:", $_POST);
 
 
