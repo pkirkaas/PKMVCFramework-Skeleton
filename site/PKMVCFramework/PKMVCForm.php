@@ -58,11 +58,11 @@ namespace PKMVC;
  * hidden input element with the name "objName[id]", set it to the value of the
  * object ID, and output it with the ->openForm() method.
  * 
- * TODO: Figure out how to integrate this with repeating
- * subforms/collections...
+ * IMPORTANT: A form can be a top-level form, or subform -- including 
+ * scrolling one-to-many subform collection of repeating elements. 
  */
 
-class BaseForm {
+class BaseForm extends BaseFormComponent {
   /**
    *
    * @var String: The template to use with the particular form instance
@@ -77,23 +77,49 @@ class BaseForm {
   /**
    * @var String: The various form attributes and their defaults...
    */
+  /*
   protected $action = '';
   protected $enctype = 'multipart/form-data';
   protected $method = 'POST';
   protected $name = '';
   protected $class = '';
   protected $id = '';
+   * 
+   */
   protected $renderResult = null;
 
-  protected static $validAttributes = array (
-
+  /** An array of valid HTML FORM attributes - if they are included as param
+   * keys, will be part of the form element attribute set..
+   * This array shouldn't be accessed directly, accessed instead by the function
+   * "static::isValidAttribute($attrName);" to account for the special cases of
+   * 'data-XXX' attributes. isValidAttribute also checks a separate list of
+   * HTML Global attributes which are not specific to form elements and not
+   * in this array.
+   */
+  public /*protected*/ static $validAttributes = array (
+      'action', 'enctype', 'method', 'name', 
   );
 
   /**
-   *
+   * @var array: Names of key attributes from the initialization array that
+   * direct members of this class, and assigned directly. 
+   */
+  public /*protected*/ static $memberAttributes = array(
+      'label', 'for', 'topform', 'template', 'baseObj',
+
+      );
+
+  /**
    * @var type Is this the top level form - that is, not a subform? 
    */
   protected $topForm = false;
+
+  /**
+   *
+   * @var array: $key=>$value pairs of form attributes & values (like,
+   * class, action, method, etc)
+   */
+  protected $attributes = array(); 
 
   /**
    *
@@ -132,10 +158,6 @@ class BaseForm {
     return $this->baseObj;
   }
 
-  public static function isValidAttribute($attr) {
-    return MVCLib::isValidAttribute($attr,static::$validAttributes);
-  }
-
   /**
    * Sets the attributes of the form
    * @param array $attributes: Associative array of attribute names/values
@@ -151,10 +173,14 @@ class BaseForm {
     $properties = array_keys(get_object_vars($this));
     foreach ($attributes as $key =>$value) {
       if (($key == 'element') || ($key == 'elements')) {
-        $this->setElement($value);
-        contininue;
+        $this->setElement($value); #value should be array of elements, array
+             #of data to create element/elements, or just an element...
+        continue;
       }
-      if (in_array($key,$properties)) {
+      if (static::isValidAttribute($key)) {
+        $this->attributes[$key] = static::clean($value);
+      }
+      if (in_array($key,$properties)) {#Like, topform, template, 
         $this->$key = $value;
       }
     }
@@ -169,6 +195,7 @@ class BaseForm {
    * @return null;
    */
   public function __construct($args = null) {
+    $this->elements = new PartialSet();
     if (!$args) {
       return;
     }
@@ -235,9 +262,11 @@ class BaseForm {
   /** Add a PKMVC Form element to the assoc array collection, as name=>object
    * pairs. Can be one at a time (if $key is a string) or multiple (if array)
    * @param String|Array $key: Either the string key name, or an array of keys
-   * and valuues. Values can be either instances of BaseElements, or arrays of
-   * values used to build an element
-   * @param BaseElement|null $val: Individual BaseElement instance, or null
+   * and values. Values can be either instances of BaseFormComponent
+   * (eg, BaseForm or BaseElement) or arrays of values used to build an
+   * element or subform.
+   * @param BaseFormComponent|null $val: Individual BaseFormComponent
+   * instance, or null if the $key parameter is an array
    */
   public function setElement($key = null, $val=null) {
     return $this->addElement($key,$val);
@@ -255,7 +284,7 @@ class BaseForm {
       throw new \Exception("Bad key input to add Element value");
     }
     foreach ($setArr as $skey => $sval) {
-      if ($sval instanceOf BaseElement) {
+      if ($sval instanceOf BaseFormComponent) {
         $this->elements[$skey] = $sval;
       } else if (is_array($sval)) { #Make an element from the data
         $el = new BaseElement($sval);
@@ -294,6 +323,7 @@ class BaseForm {
       return $this->renderResult->__toString();
     }
     #No template, no renderResult - output default, which is all elements  
+
     
   }
 

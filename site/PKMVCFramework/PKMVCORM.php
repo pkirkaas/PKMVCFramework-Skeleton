@@ -55,7 +55,10 @@ use \ReflectionClass;
  * a start, by default. Can override if necessary.
  *
  * Conclusion: Abstract all: for memberDirects/memberObjects/memberCollections - should be a merge all the way up the inheretance tree. 
-
+ * 
+ * NOTE: static member arrays that should be merged up by descendent classes
+ * are currently public to use a common function across classes, but should
+ * be reverted to protected when switch over to traits...
  */
 class BaseModel {
 
@@ -71,7 +74,7 @@ class BaseModel {
    * key=>value pair <tt>'mother'=> 'Person'</tt> which maps the 'mother' object to
    * its class.
    */
-  protected static $memberObjects = array(); #Array of names of member objects
+  public /*protected*/ static $memberObjects = array(); #Array of names of member objects
 
   /** Array that maps collection attributes to their characteristics. A "collection"
    * attribute represents a one-to-many relationship from this object to a set of
@@ -85,12 +88,12 @@ class BaseModel {
    * 'cascade'=>true)</tt>. Where 'cascade' is optional, default to 'true', which
    * means, should a delete in this object also delete the collection item.
    */
-  protected static $memberCollections = array(); #Array of names of object collections
+  public /*protected*/ static $memberCollections = array(); #Array of names of object collections
 
   /** Just a one dimentional array of attribute names of this class which correspond
    * directly to field names of the underlying table.
    */
-  protected static $memberDirects = array('id'); #Array of Class attributes that map directly to table fields.
+  public /*protected*/ static $memberDirects = array('id'); #Array of Class attributes that map directly to table fields.
   /** Every class that uses this object model will have a primary key "id":
    */
   protected $id;
@@ -343,22 +346,8 @@ class BaseModel {
    */
 
    public static function getMemberMerged($attributeName, $idx = false) {
-     #First, build array of arrays....
-     $retArr = array();
      $class = get_called_class();
-     $retArr[]=static::$$attributeName; #Deliberate double $$
-     while ($par = get_parent_class($class)) {
-      $retArr[]=$par::$$attributeName;
-      $class=$par;
-    }
-    #Now merge. Reverse order so child settings override ancestors...
-    $retArr = array_reverse($retArr);
-    $mgArr = call_user_func_array('array_merge',$retArr);
-    if ($idx) { #Indexed array, return only unique values. For 'memberDirects'
-      #Mainly to save the developer who respecifies 'id' in the derived direct
-      $mgArr = array_unique($mgArr);
-    }
-    return $mgArr;
+     return MVCLib::getMemberMerged($class, $attributeName, $idx);
    }
 
 

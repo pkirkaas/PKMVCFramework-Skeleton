@@ -18,6 +18,169 @@
 namespace PKMVC;
 
 /**
+ * The base class for forms, subforms, and form elements (controls)
+ */
+class BaseFormComponent {
+  public /*protected*/ static $validAttributes = array('autocomplete', 'novalidate',);
+  public /*protected*/ static $memberAttributes = array('name', 'label', 'for');
+  public /*protected*/ $attributes = array();
+  public /*protected*/ $otherAttributes = array();
+
+  /** @var array: Hack to exclude certain legitimate HTML attribute values from being 
+   * set in attrString because we will be handling them specially...
+   */
+  protected static $valueExcusions = array();
+  protected $name;
+  protected $label = '';
+  protected $for = '';
+
+  /**
+   * Cleans input strings for inclusion as values for HTML attributes
+   * within double quotes. Not sure correct for all to go through here...
+   * 
+   * @param String $val: Possibly dirty string with quotes, etc
+   * @return String: Purified input
+   */
+  public static function clean($val) {
+    $val = htmlspecialchars($val, ENT_QUOTES);
+    return $val;
+  }
+
+  /**
+   * Climbs the ancestor hierarchy of attributes, and adds global HTML
+   * attributes
+   */
+  public static function getValidAttributes() {
+     $class = get_called_class();
+     $bfcVA = MVCLib::getMemberMerged($class, 'validAttributes');
+     $validAttributes = array_flatten($bfcVA,MVCLib::$globalHtmlAttributes);
+     return $validAttributes;
+  }
+
+  /**
+   * Verifies if the named attribute belongs as an attribute in the input
+   * element. Aside from just checking if in_array of validAttributes, makes
+   * *dispensation for attributes starting with 'data-'.
+   * @param String $attr: attribute name
+   * @return Boolean: Include in input control?
+   */
+  public static function isValidAttribute($attr) {
+    //return MVCLib::isValidAttribute($attr, static::$validAttributes);
+    return in_array($attr,static::getValidAttributes());
+  }
+
+  /** TODO: BAD method naming here -- get/set operate on two different things 
+   *  completely
+   * @param type $args
+   */
+  public static function getMemberAttributes() {
+     $class = get_called_class();
+     return MVCLib::getMemberMerged($class, 'memberAttributes');
+
+  }
+  public function setMemberAttributeVals($args) {
+    foreach ($args as $key => $value) {
+      if (in_array($key, static::$getMemberAttributes())) {
+        $this->$key = static::clean($value);
+      }
+    }
+  }
+  public function makeLabelCtl() {
+    $labelCtl='';
+    if ($this->label) {
+      $val = $this->label;
+      $for = $this->for ? " for = '{$this->for}' " : '';
+      $el_class = $this->getAttribute('class');
+      $ctlPairClass = $this->ctl_pair_class; #Can be customized in create
+      $labelCtl = "<div class='$ctlPairClass $el_class-pair' >"
+        . " <label $for>$val</label> ";
+    }
+    return $labelCtl;
+  }
+
+  /**
+   * Returns the value of any attribute, normal or special, or false if none
+   * @param type $attrName
+   * @return boolean|value: The attribute value if it exists, else boolean false
+   * @throws \Exception: if $attrName not a string
+   */
+  public function getAttribute($attrName) {
+    if (!attrName || !is_string($attrName)) { #bad call
+      throw new \Exception("Improper arg for attrName");
+    }
+    $attributes = $this->getAllAttributes();
+    if (!array_key_exists($attrName,$attributes)) {
+      return false;
+    }
+    return $attributes[$attrName];
+  }
+
+  public function getAttributes() {
+    return $this->attributes;
+  }
+
+  public function getOtherAttributes() {
+    return $this->otherAttributes;
+  }
+
+  public function getAllAttributes() {
+    return array_merge ($this->getAttributes(), $this->getOtherAttributes());
+  }
+
+
+  /** Sets values for this element
+   * If key name is valid attribute, adds to attributer array and
+   * cleans its value
+   * @param array $args: Assoc array of name/value pairs
+   * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
+   * be inclduded between the open and close tags
+   */
+
+  public function setValues($args = array(), $exclusions = array()) {
+    $this->setMemberAttributeVals($args);
+    foreach ($args as $key => $val) {
+      //if (($key == 'input') || ($key == 'type')) {
+      if (in_array($key, static::$valueExclusions)) {
+        continue;
+      } else if (static::isValidAttribute($key)) {
+        $this->attributes[$key] = static::clean($val);
+      } else { #Leftover args -- save for later?
+        #But don't know what they are, so don't clean
+        $this->otherAttributes[$key] = $val;
+      }
+    }
+  }
+
+
+  /**
+   * Makes an inner attribute string from regular HTML form element attributes
+   * @param Array $defaults: Optional array of key/value pairs to set as default
+   * values for this element, if values not provided in the constructor
+   * @param Array $exclusions: Indexed array of attribute names NOT to include
+   * when building attribute string, if overridden in particular control builder
+   * @return String: HTML attribute string for inclusion in element/control,
+   * like: " name='aname' class='aclass' ... "
+   */
+  public function makeAttrStr($defaults = array(), $exclusions = array()) {
+    $attrStr = " name='{$this->name}' ";
+    $attributes = $this->getAttributes();
+    foreach ($defaults as $key => $value) {
+      if (!in_array($key, array_keys($attributes))) {
+        $attributes[$key] = $value;
+      }
+    }
+    foreach ($attributes as $key =>$value) {
+      if (!in_array($key, $exclusions)) {
+        $attrStr .= " $key='$value' ";
+      }
+    }
+    return $attrStr;
+  }
+
+
+}
+
+/**
  * For inclusion of input elements in Forms. Implements __toString to output
  * appropriate HTML.
  * 
@@ -52,7 +215,7 @@ namespace PKMVC;
  */
 
 
-class BaseElement {
+class BaseElement extends BaseFormComponent {
 
   /** An array of valid HTML input attributes - if they are included as param
    * keys, will be part of the input element.
@@ -62,17 +225,22 @@ class BaseElement {
    * HTML Global attributes which are not specific to form elements and not
    * in this array.
    */
-  protected static $validAttributes = array(
+  public /*protected*/ static $validAttributes = array(
       'accesskey', 'class', 'contenteditable', 'contextmenu', 'dir',
       'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck',
       'style', 'tabindex', 'title', 'translate',  'name',
-      'checked', 'accept', 'alt', 'autocomplete', 'autofocus',
+      'checked', 'accept', 'alt', 'autofocus',
       'form', 'formaction', 'formenctype', 'formmethod', 'formnovalidate',
       'formtarget', 'height', 'list', 'max', 'maxlength', 'min', 'multiple',
       'step', 'type', 'value', 'width',
   );
 
   protected $ctl_pair_class="ctl-pair";
+
+  /** @var array: Hack to exclude certain legitimate HTML attribute values from being 
+   * set in attrString because we will be handling them specially...
+   */
+  protected static $valueExcusions = array('input','type');
 
   /**
    * @var array: Valid form element types (Added my own: boolean, HTML, subform)
@@ -86,7 +254,7 @@ class BaseElement {
    * added. If don't want to bother making a form template
    * (see BaseForm documentation)
    */
-  protected static $validInputs = array(
+  public /*protected*/ static $validInputs = array(
       'input', 'textarea', 'button', 'select', 'option', 'optgroup',
       'fieldset', 'boolean', 'html', 'subform',
   );
@@ -94,37 +262,35 @@ class BaseElement {
   /**
    * @var array: If element instance of "input", what are valid input types? 
    */
-  protected static $validTypes = array(
+  public /*protected*/ static $validTypes = array(
       'checkbox', 'color', 'date', 'datetime', 'datetime-local', 'email', 'file',
       'hidden', 'image', 'month', 'number', 'password', 'radio', 'range', 'reset',
       'search', 'submit', 'tel', 'text', 'time', 'url', 'week', 'button',
   );
 
   /**
-   *
    * @var array: elements that are not self-closing, need a closing tag, and
    * assume that the special attribute 'content' is set and will be echoed
    * between the open/close tags. 'select' should also be a content input,
    * but we treat it special
    */
-  protected static $contentInputs = array('textarea', 'button', 'label',
+  public /*protected*/ static $contentInputs = array('textarea', 'button', 'label',
   );
 
   /**
    * @var array: Element names/types treated specially when rendered
    */
-  protected static $specialInputs = array('boolean',
+  public /*protected*/ static $specialInputs = array('boolean',
       'select', 'subform', 'html',);
 
   /**
-   *
    * @var array: Names of key attributes from the initialization array that
    * direct members of this class, and assigned directly. 
    */
-  protected static $memberAttributes = array(
-      'label', 'for', 'ctl_pair_class', 'input', 'type'
+  public /*protected*/ static $memberAttributes = array(
+       'ctl_pair_class', 'input', 'type'
       );
-  protected static $specialAttributes = array('label', 'for', 'ctl_pair_class');
+  public /*protected*/ static $specialAttributes = array('label', 'for', 'ctl_pair_class');
 
   /**
    * Array of validators for this element. These are just for individual elements.
@@ -132,8 +298,6 @@ class BaseElement {
    * example, ensuring two elements are the same,...
    */
   protected $validators = array();
-  protected $label = '';
-  protected $for = '';
 
   /**
    * In general, the HTML input type, but we extend that for example, with
@@ -167,55 +331,6 @@ class BaseElement {
    * @var String
    */
   protected $inputStr = '';
-
-  /**
-   * Cleans input strings for inclusion as values for HTML attributes
-   * within double quotes. Not sure correct for all to go through here...
-   * 
-   * @param String $val: Possibly dirty string with quotes, etc
-   * @return String: Purified input
-   */
-  public static function clean($val) {
-    $val = htmlspecialchars($val, ENT_QUOTES);
-    return $val;
-  }
-
-  /**
-   * Verifies if the named attribute belongs as an attribute in the input
-   * element. Aside from just checking if in_array of validAttributes, makes
-   * *dispensation for attributes starting with 'data-'.
-   * @param String $attr: attribute name
-   * @return Boolean: Include in input control?
-   */
-  public static function isValidAttribute($attr) {
-    return MVCLib::isValidAttribute($attr, static::$validAttributes);
-  }
-
-  public function setMemberAttributes($args) {
-    foreach ($args as $key => $value) {
-      if (in_array($key, static::$memberAttributes)) {
-        $this->$key = static::clean($value);
-      }
-    }
-  }
-
-  /**
-   * Returns the value of any attribute, normal or special, or false if none
-   * @param type $attrName
-   * @return boolean|value: The attribute value if it exists, else boolean false
-   * @throws \Exception: if $attrName not a string
-   */
-  public function getAttribute($attrName) {
-    if (!attrName || !is_string($attrName)) { #bad call
-      throw new \Exception("Improper arg for attrName");
-    }
-    $attributes = $this->getAllAttributes();
-    if (!array_key_exists($attrName,$attributes)) {
-      return false;
-    }
-    return $attributes[$attrName];
-  }
-
   /**
    * 
    * @param Array $ags: Assoc array of key/value pairs. Just initializes values
@@ -228,58 +343,24 @@ class BaseElement {
   }
 
   /** Sets values for this element
-   * 
    * If key name is valid attribute, adds to attributer array and
    * cleans its value
    * @param array $args: Assoc array of name/value pairs
    * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
    * be inclduded between the open and close tags
-   * TODO: Need to do more with different inputs - like button with type submit
    */
   public function setValues($args = array()) {
     if (isset($args['inputStr'])) { //We're done...
       $this->inputStr = $args['inputStr'];
       return;
     }
-    $this->setMemberAttributes($args);
-    /*
-    if (isset($args['ctl_pair_class'])) {
-      $this->ctl_pair_class = $args['ctl_pair_class'];
-    }
-    if (array_key_exists('label', $args)) {#No key set, so use default
-      $this->label = static::clean($args['label']);
-    } 
-    if (array_key_exists('for', $args)) {#No key set, so use default
-      $this->for = static::clean($args['for']);
-    } 
-
-    if (!array_key_exists('input', $args)) {#No key set, so use default
-      $this->input = 'input';
-    } else { #allows creator to spefically NOT have an input by setting null 
-      $this->input = $args['input'];
-    }
-    if (!array_key_exists('type', $args) && ($this->input == 'input')) {
-      #No key set, input is 'input', so use default
-      $this->type = 'text';
-    } else if (isset($args['type'])) {
-      $this->type = $args['type'];
-    }
-     * 
-     */
+    parent::setValues($args);
     if (($this->input == 'input') && !$this->type) {
       $this->type = 'text';
     }
-    foreach ($args as $key => $val) {
-      if (($key == 'input') || ($key == 'type')) {
-        continue;
-      } else if (static::isValidAttribute($key)) {
-        $this->attributes[$key] = static::clean($val);
-      } else { #Leftover args -- save for later?
-        #But don't know what they are, so don't clean
-        $this->otherAttributes[$key] = $val;
-      }
-    }
   }
+
+
 
   public function getInputStr() {
     return $this->inputStr;
@@ -295,7 +376,7 @@ class BaseElement {
     if ($this->inputStr) {
       return $this->inputStr;
     }
-    return $this->buildHtml();
+    return ''.$this->buildHtml();
   }
 
   /**
@@ -308,16 +389,8 @@ class BaseElement {
     //$specialInputs = array('textarea','boolean','button','select','subform');
     #if $this->label set, create a label, and a div ctl pair to hold label and 
     #ctl...
-    $labelCtl='';
-    if ($this->label) {
-      $val = $this->label;
-      $for = $this->for ? " for = '{$this->for}' " : '';
-      $el_class = $this->getAttribute('class');
-      $ctlPairClass = $this->ctl_pair_class; #Can be customized in create
-      $labelCtl = "<div class='$ctlPairClass $el_class-pair' >"
-        . " <label $for>$val</label> ";
-      $ret[] = $labelCtl;
-    }
+    $labelCtl=$this->makeLabelCtl();
+    $ret[] = $labelCtl;
     $type = $this->type;
     $input = $this->input; #Maybe button?
     //Start building...
@@ -331,10 +404,20 @@ class BaseElement {
       $ret[] = "\n<$input $attrStr >$val</$input>\n";
     } else if ($input === 'boolean') { #Custum control implemented with two inputs
       $ret[] = static::makeBooleanInput($this->attributes);
-    } else if ($input === 'subform') { #Just echo the subform...
+    } else if ($input === 'subform') { #Just echo the subform, or build it ...
       $val = '';
       if (isset($this->otherAttributes['content'])) {
-        $val = $this->otherAttributes['content'];
+        $content=$this->otherAttributes['content'];
+        if (is_string($content) || ($content instanceOf BaseForm)) {
+          $val = $content;
+        } else if (is_array($content)) { #Enhancement: use 'type' for 
+          $content['topForm'] = false;
+          $val = new BaseForm($content); #in case descendent of BaseForm
+        } else { #Not valid
+          $subformType = typeOf($content);
+          throw new \Exception("Invalid subform arg type: [$subformType]");
+        }
+
       }
       #Let's have fun and implement some more functionality. If 'type' is set
       #and == 'fieldset', wrap the subform in the fieldset tag, and apply all
@@ -368,64 +451,32 @@ class BaseElement {
    * Returns a string containing two HTML input elements of the same name -- a hidden
    * input field followed by a check-box. The value of the hidden field will always
    * be set to the emmpty string. If the checkk box is checked, its value will
-   * replace the value of the hidden field during a submmit. 
-   * @param $name: Either a string representing thte "name" value, or an array of HTML
-   * attributes for the elements (includeing 'name' of course!). 
-   * 
-   * @param $value: The value of the checkox. If empty, just One. The hidden will
-   * always be the empty string.
-    ^ @ return String: HTML of the paired checkboxes to make a boolean true/false
+   * replace the value of the hidden field during a submit. 
+   * No called params, but taken from member attributes:
+   * @key $name: Required: The field "name" value
+   * @ return String: HTML of the paired checkboxes to make a boolean true/false
    */
-  public static function makeBooleanInput($name, $checked = false, $value = null) {
-    $defaultClass = 'boolean-checkbox';
-    $defaultValue = '1';
-    if (!is_array($name)) {
-      if (!is_string($name) || empty($name)) {
-        throw new Exception("The first argument to to booleanInput() must either be
-      a string with the name, or an array with 'name' as a key");
-      }
-      $name = array('name' => $name, 'class' => $defaultClass,); # 'value'=$value);
+  public function makeBooleanInput() {
+    $defaults = array('class'=>'boolean-checkbox', 'value'=>'1');
+    $exclusions = array('type');
+    $inputAttributes = $this->getAttributes();
+    $otherAttributes = $this->getOtherAttributes();
+    $allAttributes = $this->getAllAttributes();
+    $optNames = array_keys($allAttributes);
+    $reqOpts = array('name');
+    if (array_diff($reqOpts, $optNames)) { #Not all req opts present
+      $optStr = implode(',',$optNames);
+      $reqOptStr = implode(',',$reqOpts); 
+      throw new \Exception("Required Options: [$reqOptStr], got: [$optStr] ");
     }
-    if (!isset($name['name'])) {
-      throw new Exception("Attemmpt to create a Boolean Checkbox control without a name");
-    }
-    if (!isset($name['class'])) {
-      $name['class'] = $defaultClass;
-    }
-    if (!isset($name['value'])) {
-      if (is_null($value)) {
-        $value = $defaultValue;
-      }
-      $name['value'] = $value;
-    }
-    $checkStr = " <input type='checkbox' ";
-    $hiddenStr = " <input type='hidden' value='' name='" . $name['name'] . "' />";
-    if (!isset($name['checked'])) {
-      if ($checked) {
-        $name['checked'] = 'checked';
-      }
-    }
-    foreach ($name as $key => $val) {
-      $checkStr .= " $key='" . htmlspecialchars($val, ENT_QUOTES) . "' ";
-    }
-    $checkStr .= " />";
-
+    #We have all required options, set extra attributes
+    $name = $this->name;
+    $attStr = $this->makeAttrStr($defaults, $exclusions);
+    $hiddenStr = " <input type='hidden' value='' name='$name' />";
+    $checkStr = " <input type='checkbox' $attrStr />";
     $retstr = $hiddenStr . ' ' . $checkStr;
     return $retstr;
   }
-
-  public function getAttributes() {
-    return $this->attributes;
-  }
-
-  public function getOtherAttributes() {
-    return $this->otherAttributes;
-  }
-
-  public function getAllAttributes() {
-    return array_merge ($this->getAttributes(), $this->getOtherAttributes());
-  }
-
 
   /**
    * Creates a select box with the input
@@ -444,6 +495,8 @@ class BaseElement {
    * */
   #public function makePicker($name, $key, $val, $arr, $selected = null, $none = null) {
   public function makePicker() { #$name, $key, $val, $arr, $selected = null, $none = null) {
+    $name = $this->name;
+    $defaults = array('class', "$name-sel");
     $inputAttributes = $this->getAttributes();
     $otherAttributes = $this->getOtherAttributes();
     $allAttributes = $this->getAllAttributes();
@@ -455,7 +508,6 @@ class BaseElement {
       throw new \Exception("Required Options: [$reqOptStr], got: [$optStr] ");
     }
     #We have all required options, set extra attributes
-    $name = $this->name;
     if (!isset($inputAttributes['class'])) {
       $this->attributes['class'] = "$name-sel";
     }
@@ -478,21 +530,6 @@ class BaseElement {
     $select .= "\n</select>";
     return $select;
   }
-
-  /**
-   * Makes an inner attribute string from regular HTML form element attributes
-   * @return String: HTML attribute string for inclusion in element/control,
-   * like: " name='aname' class='aclass' ... "
-   */
-  public function makeAttrStr() {
-    $attrStr = " name='{$this->name}' ";
-    $attributes = $this->getAttributes();
-    foreach ($attributes as $key =>$value) {
-      $attrStr .= " $key='$value' ";
-    }
-    return $attrStr;
-  }
-
 }
 
 class BaseDbElement extends BaseElement {

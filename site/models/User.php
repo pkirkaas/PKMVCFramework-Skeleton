@@ -10,7 +10,7 @@ use PKMVC\BaseModel;
 
 class User extends BaseUser {
   static $memberDirects = array('email', 'fname', 'lname'); #Will be added to base directs
-  protected static $memberCollections = array('profiles'=>array('classname'=>'Profile', 'foreignkey'=>'user_id')); #Array of names of object collections
+  public /*protected*/ static $memberCollections = array('profiles'=>array('classname'=>'Profile', 'foreignkey'=>'user_id')); #Array of names of object collections
   protected $email;
   protected $fname;
   protected $lname;

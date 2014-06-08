@@ -30,9 +30,9 @@ Abstract Class BaseUser extends BaseModel {
    * a derived "MyUser" class
    */
   protected static $idfield = 'uname'; #Can be overriden in derived class
-  protected static $memberDirects = array('id', 'uname', 'password', 'salt');
-  protected static $memberObjects = array();
-  protected static $memberCollections = array();
+  public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
+  public /*protected*/ static $memberObjects = array();
+  public /*protected*/ static $memberCollections = array();
 
   /**
    * @var String: The username. Can be empty if derived class uses another field
