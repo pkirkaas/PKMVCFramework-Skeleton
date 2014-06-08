@@ -98,6 +98,10 @@ class BaseModel {
    * So, for id, can be: "$memberDirects = array('id');" --OR--
    * $memberDirects=array('id'=>array('dbtype'=>'int', 'dbindex'=>'primary', 
    * 'eltype'=>'hidden');
+   * 
+   * But for now, getting the different techniques to work together with 
+   * descendent classes is not a priority, so we will stick to the assoc array
+   * approach
    */
   #public /*protected*/ static $memberDirects = array('id'); 
   public /*protected*/ static $memberDirects = array(
@@ -336,14 +340,14 @@ class BaseModel {
 
   /** 
    * Recurse up through inheretence hierarchy and merge static arrays of
-   * the given attribute name. This is for use by ::getMemberDirects(),
+   * the given attribute name. This is for use by ::getMemberDirectNames(),
    * ::getMemberObjects, ::getMemberCollections()... to support deep object/class
    * inheritence. For example, BaseModel has "memberDirects=array('id');".
    * Child class "BaseUser extends BaseModel" has "memberDirects=array('uname')"
    * Your child user class might be "MyUser extends BaseUser", and 
    * MyUser::memberDirects = array('myextrastuff');
    *
-   * So MyUser::getMemberDirects() should return "array('id','uname','myextrastuff');
+   * So MyUser::getMemberDirectNames() should return "array('id','uname','myextrastuff');
    * etc.
    *
    * This static function is used by the various "getMemberXXX()" functions, and
@@ -365,8 +369,17 @@ class BaseModel {
    * 
    */
   public static function getMemberDirects() {
-    //return static::$memberDirects;
     return static::getMemberMerged('memberDirects',true);
+  }
+
+  /** Returns what was the original memberDirects structure, which is just
+   * an indexed array of direct member names, from array_keys
+   * @return type
+   */
+  public static function getMemberDirectNames() {
+    $memberDirectArrays = static::getMemberMerged('memberDirects',true);
+    $memberDirectNames = array_keys($memberDirectArrays);
+    return $memberDirectNames;
   }
 
   /** Returns the default value of member collections. Currently just
@@ -480,7 +493,7 @@ class BaseModel {
    */
   public static function getDirectFields() {
     //return static::$memberDirects;
-    return static::getMemberDirects();
+    return static::getMemberDirectNames();
   }
 
   /** Just returns the default name of the underlying table based
@@ -1002,7 +1015,7 @@ class BaseModel {
     $className = get_class($this);
     $uccName = unCamelCase($name);
     $memberCollections = static::getMemberCollections();
-    if (in_array($name, static::getMemberDirects())) { //it's a member direct'
+    if (in_array($name, static::getMemberDirectNames())) { //it's a member direct'
       $this->$name = $value;
       $this->makeDirty(1);
       return;
@@ -1056,7 +1069,7 @@ class BaseModel {
     #Could be a non-persisted member....
     $className = get_class($this);
     $memberCollections = static::getMemberCollections();
-    if (in_array($name, static::getMemberDirects())) { //it's a member direct'
+    if (in_array($name, static::getMemberDirectNames())) { //it's a member direct'
       return $this->$name;
     }
     if (in_array($name, array_keys(static::getMemberObjects()))) { //it's a member object'
@@ -1126,7 +1139,7 @@ class BaseModel {
   public function saveDirects() {
     $table_name = static::getTableName();
     $dataArr = $this->getArrayCopy();
-    $memberDirects = static::getMemberDirects();
+    $memberDirects = static::getMemberDirectNames();
     $saveArr = array();
     foreach ($memberDirects as $memberDirect) {
       $saveArr[$memberDirect] = $dataArr[$memberDirect];

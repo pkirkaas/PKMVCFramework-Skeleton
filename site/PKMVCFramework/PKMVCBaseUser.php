@@ -30,6 +30,7 @@ Abstract Class BaseUser extends BaseModel {
    * a derived "MyUser" class
    */
   protected static $idfield = 'uname'; #Can be overriden in derived class
+  #public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
   public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
   public /*protected*/ static $memberObjects = array();
   public /*protected*/ static $memberCollections = array();
@@ -67,7 +68,7 @@ Abstract Class BaseUser extends BaseModel {
    */
 
   public static function register($idvalue, $cpassword=null, $optargs = array()) {
-    $directs = static::getMemberDirects();
+    $directs = static::getMemberDirectNames();
     $class = get_called_class();
     $user = static::get();
     foreach ($optargs as $key => $val) {
