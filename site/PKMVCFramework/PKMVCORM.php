@@ -90,10 +90,20 @@ class BaseModel {
    */
   public /*protected*/ static $memberCollections = array(); #Array of names of object collections
 
-  /** Just a one dimentional array of attribute names of this class which correspond
-   * directly to field names of the underlying table.
+  /** Can be just a one dimentional array of attribute names of this class which
+   * correspond directly to field names of the underlying table -- OR --
+   * an associative array where the array keys are as above, field names, but
+   * the values are associative arrays which define the member attributes -
+   * like, DB column type, size, default form field/element type, etc
+   * So, for id, can be: "$memberDirects = array('id');" --OR--
+   * $memberDirects=array('id'=>array('dbtype'=>'int', 'dbindex'=>'primary', 
+   * 'eltype'=>'hidden');
    */
-  public /*protected*/ static $memberDirects = array('id'); #Array of Class attributes that map directly to table fields.
+  #public /*protected*/ static $memberDirects = array('id'); 
+  public /*protected*/ static $memberDirects = array(
+      'id'=>array('dbtype'=>'int', 'dbindex'=>'primary', 'eltype'=>'hidden')); 
+
+
   /** Every class that uses this object model will have a primary key "id":
    */
   protected $id;

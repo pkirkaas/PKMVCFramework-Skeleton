@@ -103,16 +103,26 @@ class BaseForm extends BaseFormComponent {
   /**
    * @var array: Names of key attributes from the initialization array that
    * direct members of this class, and assigned directly. 
+   * 'type' here is ?
+   * subform: default false, top level form, so have form open/close tags,
+   * scrolling: default false; if true, repeating form, array of objs
    */
   public /*protected*/ static $memberAttributes = array(
-      'label', 'for', 'topform', 'template', 'baseObj',
+       'subform', 'scrolling', 'template', 'baseObj', 'type',
 
       );
 
   /**
    * @var type Is this the top level form - that is, not a subform? 
    */
-  protected $topForm = false;
+  protected $subform = false;
+  protected $scrolling = false;
+
+  /**
+   * @var boolean|String: If string, contains a copy of the rendered form as
+   * a JS template, for scrolling forms
+   */
+  protected $js_template = false;
 
   /**
    *
@@ -131,6 +141,9 @@ class BaseForm extends BaseFormComponent {
   /**
    * @var Array: Ass Array of PKMVC Element/Form Input elements as name=>$el
    * Elements may be atomic HTML elements, or subforms containing other elements
+   * One of the BaseElement types you can add is input='html', which just
+   * outputs the raw HTML as content - so you can add HTML like div's and
+   * other content as elements, and maybe skip the need for a form template
    */
   protected $elements = array();
 
@@ -158,6 +171,52 @@ class BaseForm extends BaseFormComponent {
     return $this->baseObj;
   }
 
+  /** Overrides base method just for special treatment of ->baseObj, 
+   * (in case class name & not object makes new), then hands off to parent.
+   * @param Array $args: The initialization args
+   */
+  public function setMemberAttributeVals($args) {
+    if (isset($args['baseObj'])) {
+      $args['baseObj'] = $this->returnObject($args['baseObj']);
+    }
+    return parent::setMemberAttributeVals($args);
+  }
+
+  /** Takes the argument and returns it if instance of BaseModel, or tries
+   * to create it if $obj is a string ClassName.
+   * For sure going to have Namespace issues here. Namespaces in PHP suck...
+   * @param String|BaseModel: A BaseModel instance or BaseModel class name
+   * @return BaseModel: instance of a BaseModel derived class
+   */
+  public function returnObject($obj) {
+    if ($obj instanceOf BaseModel) {
+      return $obj;
+    }
+    if (isset($args['baseObj']) && is_string($args['baseObj'])) {
+      $className = toCamelCase($args['baseObj'], true);
+      if (!class_exists($className)) { #Bad Model Class
+        throw new \Exception("Class [$className] not defined!");
+      }
+      $baseObj = new $className();
+      if (!($baseObj instanceOf BaseModel)) {
+      }
+      $args['baseModel'] = $baseModel;
+    }
+    if (is_string($obj)) {
+      $className = toCamelCase($obj, true);
+      if (!class_exists($className)) { #Bad Model Class
+        throw new \Exception("Class [$className] not defined!");
+      }
+      $newObj = new $className();
+    } else {
+      throw new \Exception("Bad argument type");
+    }
+    if (!$newObj instanceOf BaseModel) {
+      throw new \Exception("baseObj [$className] not instanceOf BaseModel!");
+    }
+    return $newObj;
+  }
+
   /**
    * Sets the attributes of the form
    * @param array $attributes: Associative array of attribute names/values
@@ -166,27 +225,32 @@ class BaseForm extends BaseFormComponent {
    * an element instance or an array that can be used to create the element
    * @return \PKMVC\BaseForm
    */
-  public function setAttributes(Array $attributes) {
-    if (!$attributes || !is_array($attributes)) {
-      return $this;
-    }
-    $properties = array_keys(get_object_vars($this));
-    foreach ($attributes as $key =>$value) {
-      if (($key == 'element') || ($key == 'elements')) {
-        $this->setElement($value); #value should be array of elements, array
-             #of data to create element/elements, or just an element...
-        continue;
-      }
-      if (static::isValidAttribute($key)) {
-        $this->attributes[$key] = static::clean($value);
-      }
-      if (in_array($key,$properties)) {#Like, topform, template, 
-        $this->$key = $value;
-      }
-    }
+  public function setValues(Array $attributes) {
+    parent::setValues($attributes);
+    #Set elements if present....
+    if (isset($attributes['elements'])) {
+      $this->addElement($attributes['elements']);
 
+
+
+
+      $elements = $attributes['elements']; 
+      foreach ($elements as $key => $value) { 
+        if ($value instanceOf BaseFormComponent) {
+          $this->elements[$key] = $value;
+        } else if (is_array($value)) {
+          $this->elements[$key] = new BaseElement($value);
+        } else { #Bad element value
+          $elType = typeOf($value);
+          throw new \Exception("Invalid el type: [$elType] for key: [$key]'");
+        }
+      }
+
+
+    }
     return $this;
   }
+
 
   /** Initialize with a model object, or an assoc key/value array
    * 
@@ -204,7 +268,7 @@ class BaseForm extends BaseFormComponent {
       return;
     }
     if (is_array($args) ) {
-
+      $this->setValues($args);
     }
   }
 
@@ -230,13 +294,22 @@ class BaseForm extends BaseFormComponent {
 
   /**
    * Return the open form string, based on attributes
+   * If don't want to automatically echo the ID element, $echoId = false;
+   * @param boolean $echoId: Should the openForm method automatically echo
+   * a hidden ID element, and generate it if it's not already set?
    */
   public function openForm($echoId = true) {
+    /*
     $formTag = "\n<form class='{$this->class}' method='{$this->method}'
       action='{$this->action}' id={$this->id}' enctype='{$this->enctype}' 
         name='{$this->name}' >\n";
+     * 
+     */
+    $attrStr = $this->makeAttrStr();
+    $formTag = "\n<form $attrStr >";
     if ($echoId) {
       $formTag .= $this->getElement('id');
+      unset($this->elements['id']); #If already output here, don't do again
     }
     return $formTag;
   }
@@ -249,7 +322,7 @@ class BaseForm extends BaseFormComponent {
   public function closeForm() {
     $close =  "\n</form>\n";
     $submitEl = $this->getElement('submit');
-    if ($submitEl === false) { #Hasn't been set; create default
+    if ($submitEl === false) { #Not set; not even to null! So create default
       $submitEl = new BaseElement(array('submit'=>
           array('type'=>'submit', 'name'=>'submit', 'value'=>'Submit')));
     }
@@ -275,22 +348,40 @@ class BaseForm extends BaseFormComponent {
     if (!$key) {
       return $this->elements;
     }
+
+    #Is $key array of names/elements, or a string name, with an element value?
+    #Either way, convert to array so we only deal with one method
     $setArr = array();
     if (is_array($key)) {
       $setArr = $key;
     } else if (is_string($key)) {
       $setArr[$key] = $val;
-    } else { #Bad input
-      throw new \Exception("Bad key input to add Element value");
+    } else { #Bad key
+      $keyType = typeOf($key);
+      throw new \Exception("Bad key type [$keyType] to add Element value");
     }
+
+    #Okay, have an array. But good element name/element value (El or arr) pairs?
     foreach ($setArr as $skey => $sval) {
-      if ($sval instanceOf BaseFormComponent) {
+      if (!is_string($skey) && !is_numeric($skey)) { #String -- or num?
+        $skeyType = typeOf($skey);
+        throw new \Exception("Bad key type [$skeyType] to add Element value");
+      }
+      if ($sval instanceOf BaseFormComponent) {#Is already el or subform...
         $this->elements[$skey] = $sval;
-      } else if (is_array($sval)) { #Make an element from the data
-        $el = new BaseElement($sval);
-        $this->elements[$skey] = $el;
-      } else { 
-        $this->elements[$skey] = $sval;
+      } else if (is_array($sval)) { #Make element or subform from data array
+        if (isset($sval['subform'])) {
+          if (isset($sval['scrolling'])) {
+            $this->elements[$skey] = new FormSet($sval);
+          } else {
+            $this->elements[$skey] = new BaseForm($sval);
+          }
+        } else {
+          $this->elements[$skey] = new BaseElement($sval);
+        }
+      } else { #Bad element value 
+        $svalType = typeOf($sval);
+        throw new \Exception("Bad El type [$svalType] for Key: [$skey]");
       }
     }
     return $this->elements;
@@ -323,16 +414,11 @@ class BaseForm extends BaseFormComponent {
       return $this->renderResult->__toString();
     }
     #No template, no renderResult - output default, which is all elements  
-
-    
-  }
-
-  /**
-   * Outputs the default format if there is no template -- just all the elements
-   * wrapped in HTML
-   */
-  public function outputDefault() {
-
+    #BUT -- if it is topLevel form, output open & close tags as well....
+    if (!$this->subform) {
+      return $this->openForm().$this->elements.$this->closeForm();
+    }
+    return ''.$this->elements;
   }
 
   /** Returns an input element by name in assoc array. Can be empty/null if
@@ -340,20 +426,40 @@ class BaseForm extends BaseFormComponent {
    * 
    * @param String $name
    */
-  public function getElement($name) {
-    if (!array_key_exists($name, $this->elements)) {
-      return false; #Distinguish between explicitly set NULL and not set at all
+  public function getElement($elName) {
+    if (array_key_exists($elName, $this->elements)) {
+      return $this->elements[$elName]; #Distinguish between explicitly set NULL and not set at all
     }
-    if (isset($this->elements[$name])) {
-      return $this->elements[$name];
-    } else if (($this->baseObj) && ($name == 'id')) {
-      $className = $this->baseObj->getBaseName();
-      return new BaseElement(array('type'=>'hidden',
-          'name'=>unCamelCase($className)."[id]", 'value'=>$this->baseObj->getId()));
+    if ($elName == 'id') {#Not explicitly set or cleared, so make default..
+      if ($this->baseObj) {
+        $className = $this->baseObj->getBaseName();
+        return new BaseElement(array('type'=>'hidden',
+            'name'=>unCamelCase($className)."[id]", 'value'=>$this->baseObj->getId()));
 
-    } else {
-      return null;
+      } else {
+      }
     }
+  }
+
+
+  /**
+   * Builds a default form from an object/class instanceOf BaseModel
+   * @param null|BaseModel|String $obj: An object instance of BaseModel, or
+   * a String which is the name of a class descendent from BaseModel. If
+   * null, looks for the current form instance $this->baseObj;
+   * @param array $args: Optional key/value arguments -- like, maybe a template?
+   */
+  public function spinFormFromObject($obj = null, $args = array()) {
+    $baseObj = $this->baseObj; #default
+    if ($obj) { #override the member default baseObj
+      $baseObj = $this->returnObject($obj);
+    }
+    if (!$baseObj instanceOf BaseModel) {
+      throw new \Exception("Couldn't get a valid baseObject");
+    }
+    #Have the object, now the hard part....
+    #Build the array of names and values
+
   }
 
 
@@ -445,51 +551,34 @@ public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = 
 }
 
 /**
- * Returns a string containing two HTML input elements of the same name -- a hidden
- * input field followed by a check-box. The value of the hidden field will always
- * be set to the emmpty string. If the checkk box is checked, its value will
- * replace the value of the hidden field during a submmit. 
- * @param $name: Either a string representing tthte "name" value, or an array of HTML
- * attributes for the elements. 
- * @param $value: The value of the checkox. If empty, just One. The hidden will
- * always be the empty string.
- ^ @ return String: HTML of the paired checkboxes to make a boolean true/false
+ * Collection of identical forms for collections/scrolling/add/delete...
+ * TODO: What are the args we should use here?
  */
+class FormSet extends BaseForm {
+  /**
+   *
+   * @var PartialSet: collection of identical forms (except for content)
+   * Want as PartialSet instead of just array to allow __toString()
+   */
+  protected $forms = null;
 
-function makeBooleanInput ($name, $checked = false, $value=null) {
-  $defaultClass = 'boolean-checkbox';
-  $defaultValue = '1';
-  if (!is_array($name)) {
-    if (!is_string($name) || empty($name)) {
-      throw new Exception ("The first argument to to booleanInput() must either be
-      a string with the name, or an array with 'name' as a key");
-    }
-    $name = array('name'=>$name, 'class' =>  $defaultClass,);# 'value'=$value);
-  }
-  if (!isset($name['name'])) {
-    throw new Exception ("Attemmpt to create a Boolean Checkbox control without a name");
-  }
-  if (!isset($name['class'])) {
-    $name['class'] = $defaultClass;
-  }
-  if (!isset($name['value'])) {
-    if (is_null($value)) {
-      $value = $defaultValue;
-    }
-    $name['value'] = $value;
-  }
-  $checkStr =  " <input type='checkbox' "; 
-  $hiddenStr = " <input type='hidden' value='' name='".$name['name'] ."' />";
-  if (!isset($name['checked'])) {
-    if ($checked) {
-      $name['checked'] = 'checked';
-    }
-  }
-  foreach ($name as $key => $val)  {
-    $checkStr .= " $key='".htmlspecialchars($val,ENT_QUOTES)."' ";
-  }
-  $checkStr .= " />";
+  /**
+   * @var Array: The set of objects to match to the forms, or array of 
+   * data arrays if not objs
+   */
+  protected $data = array();
+  protected $objs = array();
+  /**
+   *
+   * @var BaseForm: The base form instance to clone & populate
+   */
+  protected $base_form;
+  public /*protected*/ $otherAttributeNames = array('base_form', 'objs', 'data');
 
-  $retstr = $hiddenStr .' '.$checkStr;
-  return $retstr;
+  public function __construct($args = null) {
+    $this->forms = new PartialSet();
+    parent::__construct($args);
+
+  }
+
 }

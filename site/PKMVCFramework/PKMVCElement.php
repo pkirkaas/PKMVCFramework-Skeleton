@@ -23,6 +23,7 @@ namespace PKMVC;
 class BaseFormComponent {
   public /*protected*/ static $validAttributes = array('autocomplete', 'novalidate',);
   public /*protected*/ static $memberAttributes = array('name', 'label', 'for');
+  public /*protected*/ $otherAttributeNames = array();
   public /*protected*/ $attributes = array();
   public /*protected*/ $otherAttributes = array();
 
@@ -33,6 +34,11 @@ class BaseFormComponent {
   protected $name;
   protected $label = '';
   protected $for = '';
+  /**
+   * @var Array: Copy of the original arguments to create or set this thing,
+   * in case we want create a form instead of an element or v/v  
+   */
+  protected $origArgs; 
 
   /**
    * Cleans input strings for inclusion as values for HTML attributes
@@ -78,10 +84,16 @@ class BaseFormComponent {
      return MVCLib::getMemberMerged($class, 'memberAttributes');
 
   }
+
+  /** Two approaches: count on memberAttributes being set correctly, or
+   * get all object vars and see if arg keys match names....
+   * @param type $args
+   */
   public function setMemberAttributeVals($args) {
+    #Trust static memberAttributes...
     foreach ($args as $key => $value) {
-      if (in_array($key, static::$getMemberAttributes())) {
-        $this->$key = static::clean($value);
+      if (in_array($key, static::getMemberAttributes())) {
+        $this->$key = $value;
       }
     }
   }
@@ -129,23 +141,32 @@ class BaseFormComponent {
 
 
   /** Sets values for this element
-   * If key name is valid attribute, adds to attributer array and
+   * If key name is valid attribute, adds to attribute array and
    * cleans its value
+   * If any keys match this object member variable attributes as enumerated in
+   * static::$memberAttributes, sets those
+   * And all other keys of unknown provenance are saved to ->otherAttributes.
    * @param array $args: Assoc array of name/value pairs
    * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
    * be inclduded between the open and close tags
    */
 
   public function setValues($args = array(), $exclusions = array()) {
+    if (!$args || !is_array($args)) {
+      return $this;
+    }
+    $this->origArgs = $args;
     $this->setMemberAttributeVals($args);
     foreach ($args as $key => $val) {
       //if (($key == 'input') || ($key == 'type')) {
-      if (in_array($key, static::$valueExclusions)) {
+      if (in_array($key, static::$valueExclusions) 
+        || in_array($key,$exclusions)) {#For some reason, we want to skip these
         continue;
       } else if (static::isValidAttribute($key)) {
         $this->attributes[$key] = static::clean($val);
       } else { #Leftover args -- save for later?
         #But don't know what they are, so don't clean
+        #We'll keep a copy of the memberAttributes here, too
         $this->otherAttributes[$key] = $val;
       }
     }
@@ -411,14 +432,22 @@ class BaseElement extends BaseFormComponent {
         if (is_string($content) || ($content instanceOf BaseForm)) {
           $val = $content;
         } else if (is_array($content)) { #Enhancement: use 'type' for 
-          $content['topForm'] = false;
+          $content['subform'] = true;
           $val = new BaseForm($content); #in case descendent of BaseForm
         } else { #Not valid
           $subformType = typeOf($content);
           throw new \Exception("Invalid subform arg type: [$subformType]");
         }
 
-      }
+      } else { #Create the subform with the original arguments to this El...
+        $args = $this->origArgs;
+        $args['subform'] = true;
+        if (isset($args['scrolling'])) {
+          $val = new FormSet($args);
+        } else {
+          $val = new BaseForm($args);
+        }
+      } 
       #Let's have fun and implement some more functionality. If 'type' is set
       #and == 'fieldset', wrap the subform in the fieldset tag, and apply all
       #the attributes, like 'class', etc...
