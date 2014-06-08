@@ -320,9 +320,15 @@ class RenderResult {
 
 }
 
-/** Make an array of partials to pass to the view */
+/** Make an array of partials to pass to the view, or in fact ANY array of
+ * elements that have a String representation (that is __toString if obj) --
+ * AND CAN BE ECHOED IN ANY CONTEXT, output text, and beauty part is, the 
+ * objects are ONLY EVALUATED WHEN OUTPUT -- so can add an object here, change
+ * the content elsewhere, and only evaluated when echoed. I LOVE THIS SIMPLE
+ * CLASS I INVENTED!
+ */
 class PartialSet extends \ArrayObject {
-  public $separator = ' ';
+  public $separator = '';
   public function __construct($separator = '') {
     $this->separator = $separator;
   }

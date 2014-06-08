@@ -436,3 +436,17 @@ function stringable($value) {
     if (is_null($value)) return true;
     return is_scalar($value);
 }
+
+
+/**
+ * Takes any number of arguments as scalars or arrays, or nested arrays, and
+ * returns a 1 dimentional indexed array of the values 
+ * $args: any number of arguments to flatten into an array
+ * @return array: 1 dimensional index array of values
+ */
+function array_flatten(/*$args*/) {
+  $args = func_get_args();
+  $return = array();
+  array_walk_recursive($args, function($a) use (&$return) { $return[] = $a; });
+  return $return;
+}

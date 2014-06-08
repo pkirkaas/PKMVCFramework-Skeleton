@@ -85,6 +85,10 @@ class BaseForm {
   protected $id = '';
   protected $renderResult = null;
 
+  protected static $validAttributes = array (
+
+  );
+
   /**
    *
    * @var type Is this the top level form - that is, not a subform? 
@@ -126,6 +130,10 @@ class BaseForm {
 
   public function getBaseObj() {
     return $this->baseObj;
+  }
+
+  public static function isValidAttribute($attr) {
+    return MVCLib::isValidAttribute($attr,static::$validAttributes);
   }
 
   /**
@@ -212,16 +220,16 @@ class BaseForm {
    * @return string:  HTML  form close tag, and submit button...
    */
   public function closeForm() {
+    $close =  "\n</form>\n";
     $submitEl = $this->getElement('submit');
     if ($submitEl === false) { #Hasn't been set; create default
-      $submitEl = new BaseElement(array('submit'));
+      $submitEl = new BaseElement(array('submit'=>
+          array('type'=>'submit', 'name'=>'submit', 'value'=>'Submit')));
     }
-      if (!$submitEl) { #submitEl 
-
+      if ($submitEl) { #submitEl 
+        $close = "\n".$submitEl.$close;
     }
-    
-    if ($k)
-    return "\n</form>\n";
+    return $close;
   }
 
   /** Add a PKMVC Form element to the assoc array collection, as name=>object
