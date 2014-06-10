@@ -31,7 +31,12 @@ Abstract Class BaseUser extends BaseModel {
    */
   protected static $idfield = 'uname'; #Can be overriden in derived class
   #public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
-  public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
+  #public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
+  public /*protected*/ static $memberDirects = array(
+      'uname'=> array('dbtype'=>'varchar', 'dbindex'=>'unique', 'eltype'=>'text'),
+      'password'=>array('dbtype'=>'varchar', 'eltype'=>'password'),
+      'salt' => array('dbtype'=>'varchar', 'eltype'=>''),
+      );
   public /*protected*/ static $memberObjects = array();
   public /*protected*/ static $memberCollections = array();
 

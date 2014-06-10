@@ -1,24 +1,2 @@
 <h1>Yes, the "Profile" view template...</h1>
-
-<?= $form->openForm() ?>
-<div class ="input-pair">
-  <div class="input-label">User Name:</div>
-  <?=$form->getElement('uname')?>
-</div> <!-- close div input-pair -->
-<div class ="input-pair">
-  <div class="input-label">Email:</div>
-  <?=$form->getElement('email')?>
-</div> <!-- close div input-pair -->
-<div class ="input-pair">
-  <div class="input-label">Profile Subform????:</div>
-  <?#=$form->getElement('psubform')?>
-</div> <!-- close div input-pair -->
-<?#var_dump($form);?>
-
-<div class ="input-pair">
-  <div class="input-label">Submit the form?:</div>
-  <?=$form->getElement('submit')?>
-</div>
-<!-- close div input-pair -->
-<?= $form->closeForm()?>
-
+<?= $form ?>

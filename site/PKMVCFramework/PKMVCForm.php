@@ -129,7 +129,7 @@ class BaseForm extends BaseFormComponent {
    * @var array: $key=>$value pairs of form attributes & values (like,
    * class, action, method, etc)
    */
-  protected $attributes = array(); 
+  public /*protected*/ $attributes = array(); 
 
   /**
    *
@@ -239,7 +239,15 @@ class BaseForm extends BaseFormComponent {
         if ($value instanceOf BaseFormComponent) {
           $this->elements[$key] = $value;
         } else if (is_array($value)) {
-          $this->elements[$key] = new BaseElement($value);
+          if (isset($value['subform'])) {
+            if (isset($value['scrolling'])) {
+              $this->elements[$key] = new FormSet($value);
+            } else {
+              $this->elements[$key] = new BaseForm($value, true);
+            }
+          } else {
+            $this->elements[$key] = new BaseElement($value);
+          }
         } else { #Bad element value
           $elType = typeOf($value);
           throw new \Exception("Invalid el type: [$elType] for key: [$key]'");
@@ -258,17 +266,50 @@ class BaseForm extends BaseFormComponent {
    * correspond to member attribute names. Can include array of elements
    * @return null;
    */
-  public function __construct($args = null) {
+  public function __construct($args = null, $subform = false) {
+    $this->subform = $subform;
     $this->elements = new PartialSet();
     if (!$args) {
       return;
     }
     if ($args instanceOf BaseModel) {
-      $this->baseObj = $baseObj;
+      $this->baseObj = $args;
       return;
     }
     if (is_array($args) ) {
       $this->setValues($args);
+    }
+    
+    #Set defaults if not set -- id field and submit button
+    if (!$this->subform) {
+      $idEl = $this->getElement('id');
+      #If don't want default, set explicitly to null. Else, if undefined,
+      #returns strict boolean false
+      if ($idEl === false) {
+        $className = $this->name;
+        $id = '';
+        if ($this->baseObj) {
+          $className = $this->baseObj->getBaseName();
+          $id = $this->baseObj->getId();
+        }
+        $idEl = new BaseElement(array(
+          'type'=>'hidden',
+          'name'=>unCamelCase($className)."[id]", 'value'=>$id
+        ));
+        $this->elements['id'] = $idEl;
+      }
+      $submitEl = $this->getElement('submit');
+      #If don't want default, set explicitly to null. Else, if undefined,
+      #returns strict boolean false
+      if ($submitEl === false) {
+        $submitEl = new BaseElement(array(
+            'type' => 'submit',
+            'name' => 'submit',
+            'value' => 'Submit',
+            'class' => 'submit button',
+        ));
+        $this->elements['submit'] = $submitEl;
+      }
     }
   }
 
@@ -307,10 +348,14 @@ class BaseForm extends BaseFormComponent {
      */
     $attrStr = $this->makeAttrStr();
     $formTag = "\n<form $attrStr >";
+    /*
     if ($echoId) {
       $formTag .= $this->getElement('id');
-      unset($this->elements['id']); #If already output here, don't do again
+      if (array_key_exists('id', $this->elements)) {
+        unset($this->elements['id']); #If already output here, don't do again
+      }
     }
+     */
     return $formTag;
   }
 
@@ -321,6 +366,7 @@ class BaseForm extends BaseFormComponent {
    */
   public function closeForm() {
     $close =  "\n</form>\n";
+    /*
     $submitEl = $this->getElement('submit');
     if ($submitEl === false) { #Not set; not even to null! So create default
       $submitEl = new BaseElement(array('submit'=>
@@ -329,7 +375,32 @@ class BaseForm extends BaseFormComponent {
       if ($submitEl) { #submitEl 
         $close = "\n".$submitEl.$close;
     }
+     * 
+     */
     return $close;
+  }
+
+
+
+  /**
+   * Get form data as an associative array
+   * @return array: Return the element values as named array, suitable for
+   * updating an object (nested) or whatever data you are updating...
+   */
+  public function getAsArray() {
+    $retarr = array();
+    $retarr[$this->getName()] = $this->getValuesRecursive();
+    return $retarr;
+  }
+
+  /**
+   * Updates form element values with data array, with names as keys, and 
+   * implements collections, etc.
+   * @param array $data: The assoc array of data
+   * (usu. from a model object, but whatever) to
+   * update the values of the form
+   */
+  public function setAsArray(Array $data) {
   }
 
   /** Add a PKMVC Form element to the assoc array collection, as name=>object
@@ -370,6 +441,9 @@ class BaseForm extends BaseFormComponent {
       if ($sval instanceOf BaseFormComponent) {#Is already el or subform...
         $this->elements[$skey] = $sval;
       } else if (is_array($sval)) { #Make element or subform from data array
+        if (!isset($val['name_segments'])) {
+          $val['name_segments'] = $this->nameSegments;
+        }
         if (isset($sval['subform'])) {
           if (isset($sval['scrolling'])) {
             $this->elements[$skey] = new FormSet($sval);
@@ -429,7 +503,10 @@ class BaseForm extends BaseFormComponent {
   public function getElement($elName) {
     if (array_key_exists($elName, $this->elements)) {
       return $this->elements[$elName]; #Distinguish between explicitly set NULL and not set at all
+    } else {
+      return false;
     }
+    /*
     if ($elName == 'id') {#Not explicitly set or cleared, so make default..
       if ($this->baseObj) {
         $className = $this->baseObj->getBaseName();
@@ -437,8 +514,11 @@ class BaseForm extends BaseFormComponent {
             'name'=>unCamelCase($className)."[id]", 'value'=>$this->baseObj->getId()));
 
       } else {
+
       }
     }
+     * 
+     */
   }
 
 
@@ -459,6 +539,7 @@ class BaseForm extends BaseFormComponent {
     }
     #Have the object, now the hard part....
     #Build the array of names and values
+    
 
   }
 
@@ -576,6 +657,7 @@ class FormSet extends BaseForm {
   public /*protected*/ $otherAttributeNames = array('base_form', 'objs', 'data');
 
   public function __construct($args = null) {
+    $this->scrolling = true;
     $this->forms = new PartialSet();
     parent::__construct($args);
 

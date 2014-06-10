@@ -142,7 +142,26 @@ class UserController extends AppController {
     
     $data['form'] = $form;
     return $data;
+  }
+  public function playAction() {
+    $els = array('name'=>'user','elements'=>array(
+      array('input'=>'html','content'=>"<h2>This is the Form</h2>"),
+      array('input'=>'html','content'=>"<div class='el-wrapper'>"),
+      'testtext'=>array('label'=>'Label for Text Field',
+                        'name'=>'text_data',
+                        'value'=>"This is O'Rielly's text stuff"),
+      'testtextarea'=>array('label'=>"Label For TextArea Input",
+                            'input'=>'textarea', 'name'=>'textaarea_data', 
+                            'content'=>"This is text area O'Brien's\nSong"),
+        'subform' => array('subform' => array('elements'=>array(
+          array('input'=>'html','content'=>"<h2>This is the SubForm</h2>"),
 
+        ))),
 
+      array('input'=>'html','content'=>"</div>"),
+    ));
+    $form = new BaseForm($els);
+    $data['form'] = $form;
+    return $data;
   }
 }

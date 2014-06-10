@@ -125,6 +125,12 @@ class BaseModel {
   private $dirty = 0; #Checks if object has been modified
 
   /**
+   * @var boolean: Has this object been traversed? Set to true during traversal,
+   * so won't be traversed again. Cleared by untraverse();
+   */
+  protected $traversed = false;
+
+  /**
    * This is a static array of arrays belonging to the BaseModel class. The
    * primary key is 'ClassName', the secondary key is 'id'. Every object retrieved
    * from the DB is immediately entered/stored here. Any subsequent attempt to
@@ -236,13 +242,14 @@ class BaseModel {
 
 
   /** Update this with new data from the input array.
+   * This kind of duplicates exchangeArray...
    * 
    * @param array $arr
    * @param type $withDelete
    * @return \PKMVC\BaseModel
    */
 
-  public function update(Array $arr, $withDelete = true) {
+  public function update(Array $arr, $withDelete = true, $recursive = true) {
 #TODO: Eventually, make more efficient -- only set dirty if actual
 #change results from this update
     #If no data, return
@@ -267,38 +274,40 @@ class BaseModel {
     #data arr, and just raw data. If raw data, have to call ::get() with the 
     #data to see if the object exists, and then update it as well, recursively
 
-    $collections = static::getMemberCollections();
-    foreach ($collections as $collName => $collDetails) {
-      #$collObjArr = $this->$collName; #array of collection member objects
-      #If data array has no key for this collection, skip
-      if (!isset($arr[unCamelCase($collName)])) {
-        continue;
-      }
-      $namespace = $this->getNamespaceName(); #For getting member objects
-      $newData = $arr[unCamelCase($collName)];
-      if (!sizeof($newData) || empty($newData)) { #Clear this collection
-        $this->$collName = array();
-        continue;
-      }
-      #We have an array of data arrays (at least one) for the collection objects
-      #They may be a mix of existing persisted objects (with an "ID"), and 
-      # new ones, without.
-      $collClass = $collDetails['classname'];
-      $fullCollClass = $namespace . '\\' . $collClass;
-      $foreignKeyName = $collDetails['foreignkey'];
-      $foreignKeyValue = $this->getId();
-      $newCollection = array();
-      #First, make sure each element has this->id as the foreign key
-      #then ::get() each of the datums and add to the new collection
-      foreach ($newData as $newDataRow) {
-        $newDataRow[$foreignKeyName] = $foreignKeyValue;
-        $collObj = $fullCollClass::get($newDataRow);
-        if ($collObj instanceOf $fullCollClass) {
-          $newCollection[] = $collObj;
+    if ($recursive) {
+      $collections = static::getMemberCollections();
+      foreach ($collections as $collName => $collDetails) {
+        #$collObjArr = $this->$collName; #array of collection member objects
+        #If data array has no key for this collection, skip
+        if (!isset($arr[unCamelCase($collName)])) {
+          continue;
         }
-      }
-      $this->$collName = $newCollection;
+        $namespace = $this->getNamespaceName(); #For getting member objects
+        $newData = $arr[unCamelCase($collName)];
+        if (!sizeof($newData) || empty($newData)) { #Clear this collection
+          $this->$collName = array();
+          continue;
+        }
+        #We have an array of data arrays (at least one) for the collection objects
+        #They may be a mix of existing persisted objects (with an "ID"), and 
+        # new ones, without.
+        $collClass = $collDetails['classname'];
+        $fullCollClass = $namespace . '\\' . $collClass;
+        $foreignKeyName = $collDetails['foreignkey'];
+        $foreignKeyValue = $this->getId();
+        $newCollection = array();
+        #First, make sure each element has this->id as the foreign key
+        #then ::get() each of the datums and add to the new collection
+        foreach ($newData as $newDataRow) {
+          $newDataRow[$foreignKeyName] = $foreignKeyValue;
+          $collObj = $fullCollClass::get($newDataRow);
+          if ($collObj instanceOf $fullCollClass) {
+            $newCollection[] = $collObj;
+          }
+        }
+        $this->$collName = $newCollection;
 
+      }
     }
   }
 
@@ -314,6 +323,41 @@ class BaseModel {
     return $ids;
   }
 
+  /** Goes through the object tree and it's collections to clear the "traversed"
+   * flag
+   */
+  public function untraverse() {
+    if ($this->traversed) {
+      $this->traversed = false;
+      $collections = $this->getCollections();
+      foreach ($collections as $collection) {
+        foreach ($collection as $item) {
+          $item->untraverse();
+        }
+      }
+    }
+  }
+
+  /**
+   * Returns all the collections of this object, or just the named collection
+   * @param null|String $collectionName
+   * @return Array: Associative array of collectionNames => indexed array of
+   * items of each collection, if arg null, OR just the collection items of
+   * the named collection if name given
+   * 
+   */
+  public function getCollections($collectionName = null) {
+    if ($collectionName) {
+        return $this->$collectionName;
+    }
+    $retarr = array();
+    $memberCollections = static::getMemberCollections();
+    $collectionNames = array_keys($memberCollections);
+    foreach ($collectionNames as $collectionName) {
+      $retarr[$collectionName] = $this->$collectionName;
+    }
+      return $retarr;
+    }
   /** Delete from DB, remove from persistent array, delete collections
    * 
    */
@@ -332,7 +376,6 @@ class BaseModel {
       $table_name = unCamelCase($baseName);
       $paramArr = array('id' => $id);
       $paramStr = "DELETE FROM `$table_name` WHERE `id` = :id";
-      //$strSQL = "DELETE FROM `$table_name` WHERE `id` = $id";
       prepare_and_execute($paramStr, $paramArr);
       unset(static::$instantiations[$baseName][$id]);
     }
@@ -864,7 +907,21 @@ class BaseModel {
    */
 
   /**
+   * Returns the class name of the collection name;
+   * like class name "Profile" for collection name 'profiles'
+   * or class name "Person" for collection name 'students'
+   * @param string $collection: The name of the object collection item
+   * @return String: The Class name of the collection name
+   */
+  public static function collectionClassName($collection) {
+    $memberCollections = static::getMemberCollections();
+    if (isset($memberCollections[$collection])) {
+      return $memberCollections[$collection]['classname'];
+    }
+  }
+  /**
    * TODO: Consider including Collection fields?
+   * Now duplicates this->update -- fix that?
    * To support Zend Framework 2 requirements for Form interaction.
    * Takes data from the input array and sets this objects direct members
    * from the array. Individual subclasses will want to extend/add to this
@@ -875,7 +932,10 @@ class BaseModel {
    * Changed from Zend Framework 2 model of setting $obj->attr to null
    * even if $arr['attr'] doesn't exist.
    */
-  public function exchangeArray($data) {
+  public function exchangeArray($data, $recursive = false) {
+    return $this->update($data,true, $recursive);
+
+    /*
     $this->makeDirty();
     $directFields = static::getDirectFields();
     foreach ($directFields as $directField) {
@@ -884,6 +944,24 @@ class BaseModel {
         $this->$directField = $data[$direct_field];
       }
     }
+    if ($recursive) {
+      $collections = $this->getCollections();
+      foreach ($collections as $collectionName => $collection) {
+        $collection_name = unCamelCase($collectionName);
+        if (array_key_exists($data[$collection_name])) {
+          $coll_items = $data[$collection_name];
+          $this->$collectionName = array();
+          foreach ($coll_items as $coll_item) {
+            $collectionClassName = static::collectionClassName();
+            $this->$collectionName[] =
+                    $collectionClassName::get($coll_item);
+          }
+        }
+      }
+    }
+     * 
+     */
+    
     #Another try at persisting collections?
     
     /*
@@ -928,22 +1006,45 @@ class BaseModel {
    * one to one with fields in the underlying table - not collections
    * or "memberObjects" -- just the integer ID keys that correspond to 
    * member Objects.
+   * @param int: Recurse into collections -- how deep? Decrements each time.
+   *     Still just gets db data. If -1, goes infinite. Have to worry about
+   *   infinite loops, though.
    * @return Array: The array equivalent of the object data attributes
    */
-  public function getArrayCopy() {
+  public function getArrayCopy($recurse = 0) {
+    $res = $this->getArrayCopyRecursive($recurse);
+     $this->untraverse();
+    return $res;
+  }
+
+  /**
+   * Needs to be called by getArrayCopy, so that getArrayCopy can clear the
+   * "traversed" bit afterwards
+   * @param int: Recurse into collections -- how deep? Decrements each time.
+   *     Still just gets db data. If -1, goes infinite. Have to worry about
+   *   infinite loops, though.
+   * @return Array: The array equivalent of the object data attributes
+   */
+  public function getArrayCopyRecursive($recurse = 0) {
+    $this->traversed = true;
     $retarr = array();
     $directFields = static::getDirectFields();
     foreach ($directFields as $directField) {
       $direct_field = unCamelCase($directField);
       $retarr[$direct_field] = $this->$directField;
     }
-    /*
-    $memberCollections = static::getMemberCollections();
-    foreach (array_keys($memberCollections) as $collectionName) {
-      $retarr[$collectionName] =$this->profile_jobs; 
-    } 
-     * 
-     */
+    if ($recurse ) {
+      $recurse--;
+      $memberCollections = static::getMemberCollections();
+      foreach (array_keys($memberCollections) as $collectionName) {
+        $retarr[$collectionName] = array();
+        foreach ($this->$collectionName as $obj) {
+          if (!$obj->traversed) {
+            $retarr[$collectionName][] = $obj->getArrayCopyRecursive($recurse);
+          }
+        }
+      } 
+    }
     /*
     $collectionDetails = static::getMemberCollections();
     foreach ($collectionDetails as $collectionName => $collectionDetail) {

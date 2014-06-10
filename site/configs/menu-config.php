@@ -25,6 +25,7 @@ $default_menu[] = array('route' => array('about'), 'label' => 'About', 'logtype'
 $default_menu[] = array('route' => array('user','login'), 'label' => 'Login', 'logtype' => -1,'title'=>'Log In');
 $default_menu[] = array('route' => array('user','register'), 'label' => 'Register', 'logtype' => -1,'title'=>'New User Registration');
 $default_menu[] = array('route' => array('user','profile'), 'label' => 'Profiles', 'logtype' => 1, 'title' => "Manage your QProfiles");
+$default_menu[] = array('route' => array('user','play'), 'label' => 'Play', 'logtype' => 0, 'title' => "Play with Forms");
 //$default_menu[] = array('route' => array('user','account'), 'label' => 'Account', 'logtype' => 1, 'title' => "Manage your Account settings");
 $default_menu[] = array('route' => array('user','edit'), 'label' => 'Edit', 'logtype' => 1, 'title' => "Edit your Profiles");
 $default_menu[] = array('route' => array('user','logout'), 'label' => 'Logout', 'logtype' => 1, 'title' => 'Log out of your account');

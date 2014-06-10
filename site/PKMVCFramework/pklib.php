@@ -216,7 +216,6 @@ function pkdebugOut($str) {
   //  try {
       //$logpath = $_SERVER['DOCUMENT_ROOT'].'/../app/logs/app.log';
       $logpath = $_SERVER['DOCUMENT_ROOT'] . '/logs/app.log';
-      echo "LOGPATH: [$logpath]";
       $fp = fopen($logpath, 'a+');
       if (!$fp)
         throw new Exception("Failed to open DebugLog [$logpath] for writing");

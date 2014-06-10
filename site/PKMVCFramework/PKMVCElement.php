@@ -27,18 +27,80 @@ class BaseFormComponent {
   public /*protected*/ $attributes = array();
   public /*protected*/ $otherAttributes = array();
 
+
   /** @var array: Hack to exclude certain legitimate HTML attribute values from being 
    * set in attrString because we will be handling them specially...
    */
-  protected static $valueExcusions = array();
-  protected $name;
+  protected static $valueExclusions = array();
+  protected $name = '';
   protected $label = '';
   protected $for = '';
+  /**
+   *
+   * @var Array: Form and control name segments, to be assembled into the
+   * HTML input element name. For instance, for a "User" control, the form
+   * name will be 'user', the hidden 'id' element will be id, the name segments
+   * will be array('user','id');. If the user object has multiple profiles, say,
+   * for profile name, the nameSegments might be:
+   * array('user','profiles','','name');
+   * where the empty string component would be replaced by an index count.
+   */
+  protected $nameSegments = array();
   /**
    * @var Array: Copy of the original arguments to create or set this thing,
    * in case we want create a form instead of an element or v/v  
    */
   protected $origArgs; 
+
+  /**
+   *
+   * @var mixed -- the 'value' of the control. In most cases, the 'value' 
+   * attribute of the HTML control, except for textarea, where it is the content
+   * between the open/close <textarea>Content</textarea> tags.
+   */
+  protected $content;
+
+  /** Is this a form/element to be displayed, or used as basis of a template
+   * @var Boolean 
+   */
+  protected $is_template = false;
+
+  /**
+   * Has to also figure out whether to set the $this->attributes['value'] or
+   * $this->otherAttributes['content'];
+   * @param string $content
+   */
+  protected function setContent($content) {
+    if ($this->input == 'textarea') {
+      $this->otherAttributes['content'] = $content;
+    }
+    else {
+      $content = static::clean($content);
+      $this->attributes['value'] = $content;
+    }
+    $this->content = $content;
+  }
+
+  protected function getContent() {
+    return $this->content;
+  }
+
+  /**
+   * Performs the actual datga array building/recursion
+   * TODO: Need to do somethng for collections/scrolling froms.
+   * But more important, why do we ever need this function?
+   * @return array|scalar: The data array or subcomponent
+   */
+  public function getValuesRecursive() {
+    if ($this instanceOf BaseElement) {
+      return $this->getContent();
+    }
+    $retarr = array();
+    foreach ($this->elements as $element) {
+      $retarr[$element->getName()] = $element->getValuesRecursive();
+    }
+    return $retarr;
+  }
 
   /**
    * Cleans input strings for inclusion as values for HTML attributes
@@ -82,7 +144,6 @@ class BaseFormComponent {
   public static function getMemberAttributes() {
      $class = get_called_class();
      return MVCLib::getMemberMerged($class, 'memberAttributes');
-
   }
 
   /** Two approaches: count on memberAttributes being set correctly, or
@@ -111,13 +172,24 @@ class BaseFormComponent {
   }
 
   /**
+   * Returns the control name, built from the nameSegments array an the current
+   * name. IF you want to override the default nameSegments, just set it to null
+   * explicitly when creating the control/form.
+   * @return String
+   */
+  public function getName() {
+
+
+  }
+
+  /**
    * Returns the value of any attribute, normal or special, or false if none
    * @param type $attrName
    * @return boolean|value: The attribute value if it exists, else boolean false
    * @throws \Exception: if $attrName not a string
    */
   public function getAttribute($attrName) {
-    if (!attrName || !is_string($attrName)) { #bad call
+    if (!$attrName || !is_string($attrName)) { #bad call
       throw new \Exception("Improper arg for attrName");
     }
     $attributes = $this->getAllAttributes();
@@ -155,7 +227,16 @@ class BaseFormComponent {
     if (!$args || !is_array($args)) {
       return $this;
     }
+    pkdebug ("Setting Values. ARGS:", $args);
     $this->origArgs = $args;
+    if (!empty($args['name_segments'])) {
+      $this->nameSegments = $args['name_segments'];
+    }
+    if (!empty($args['name'])) {
+      $this->name = $args['name'];
+    }
+    $this->nameSegments[] = $this->name;
+
     $this->setMemberAttributeVals($args);
     foreach ($args as $key => $val) {
       //if (($key == 'input') || ($key == 'type')) {
@@ -163,11 +244,21 @@ class BaseFormComponent {
         || in_array($key,$exclusions)) {#For some reason, we want to skip these
         continue;
       } else if (static::isValidAttribute($key)) {
+        pkdebug("KEY: [$key], val:", $val);
         $this->attributes[$key] = static::clean($val);
       } else { #Leftover args -- save for later?
         #But don't know what they are, so don't clean
         #We'll keep a copy of the memberAttributes here, too
         $this->otherAttributes[$key] = $val;
+      }
+    }
+    #Finalize, after basics
+    if (isset($this->attributes['input'])) {
+      if (($this->attributes['input'] == 'textarea') 
+          && isset($this->otherAttributes['content'])) {
+        $this->content = $this->otherAttributes['content'];
+      } else if (isset($this->attributes['value'])) {
+        $this->content = $this->atttributes['value'];
       }
     }
   }
@@ -318,7 +409,7 @@ class BaseElement extends BaseFormComponent {
    * The form class will have its own validators for form-wide validation, for
    * example, ensuring two elements are the same,...
    */
-  protected $validators = array();
+  public /*protected*/ $validators = array();
 
   /**
    * In general, the HTML input type, but we extend that for example, with
@@ -334,13 +425,13 @@ class BaseElement extends BaseFormComponent {
    * They are parsed, and those that are valid attributes for inclusion in 
    * the input element are added here.
    */
-  protected $attributes = array();
+  public /*protected*/ $attributes = array();
 
   /**
    * @var array: Extra args NOT valid for input attribute values were passed
    * here. Fx, 'content'. Let's keep them around for something later.
    */
-  protected $otherAttributes = array();
+  public /*protected*/ $otherAttributes = array();
 
   /**
    * @var Array: Ass arr of all values required to build this input
@@ -371,10 +462,6 @@ class BaseElement extends BaseFormComponent {
    * be inclduded between the open and close tags
    */
   public function setValues($args = array()) {
-    if (isset($args['inputStr'])) { //We're done...
-      $this->inputStr = $args['inputStr'];
-      return;
-    }
     parent::setValues($args);
     if (($this->input == 'input') && !$this->type) {
       $this->type = 'text';
@@ -424,7 +511,13 @@ class BaseElement extends BaseFormComponent {
       }
       $ret[] = "\n<$input $attrStr >$val</$input>\n";
     } else if ($input === 'boolean') { #Custum control implemented with two inputs
-      $ret[] = static::makeBooleanInput($this->attributes);
+      //$ret[] = static::makeBooleanInput($this->attributes);
+      $ret[] = $this->makeBooleanInput();
+
+
+
+
+      /*
     } else if ($input === 'subform') { #Just echo the subform, or build it ...
       $val = '';
       if (isset($this->otherAttributes['content'])) {
@@ -459,12 +552,25 @@ class BaseElement extends BaseFormComponent {
       } else {
         $ret[]= $val;
       }
+       * 
+       */
+
+
+
+
     } else if ($input === 'select') { #Build the select...
       $ret[] = $this->makePicker();
     } else if ($input === 'html') { #Convenience, just echo without question...
+      $val = '';
+      if (isset($this->otherAttributes['content'])) {
+        $val .= $this->otherAttributes['content'];
+      } 
+      if (isset($this->attributes['value'])) {
+        $val .= $this->attributes['value'];
+      } 
       $ret[] = $val;
     } else { #Not a special type, make a regular input of the type..
-      $ret[] = "\n<'$input' type='$type' $attrStr />";
+      $ret[] = "\n<$input type='$type' $attrStr />";
     }
     if ($labelCtl) {
       $ret[] = "\n</div>\n";

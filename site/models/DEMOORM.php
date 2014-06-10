@@ -24,8 +24,8 @@ use PKMVC\ViewRenderer;
 
 class Demo extends BaseModel {
 
-  protected static $memberObjects = array('category'=>'Category','region'=>'Region');
-  protected static $memberCollections = array(
+  public static $memberObjects = array('category'=>'Category','region'=>'Region');
+  public static $memberCollections = array(
       'cells'=>
            array('classname'=>'ChartCell','foreignkey'=>'chart_id'),
       'foodgroupconsiderations'=>
@@ -33,8 +33,8 @@ class Demo extends BaseModel {
       'requirements'=>
            array('classname'=>'Requirement', 'foreignkey'=>'chart_id'),
       );
-  protected static $memberDirects = array('category_id', 'region_id',
+  public static $memberDirects = array('category_id', 'region_id',
     'description', 'other_considerations',);
-  protected $cells = array(); #Array of chart cells with rules
+  public $cells = array(); #Array of chart cells with rules
 
 }
