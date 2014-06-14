@@ -72,7 +72,7 @@ class BaseForm extends BaseFormComponent {
    * @var BaseModel: Often, a form will be based on a BaseModel object. In
    * which case, set it and we do some assistance.
    */
-  protected $baseObj = null;
+  protected $base_object = null;
 
   /**
    * @var String: The various form attributes and their defaults...
@@ -111,8 +111,8 @@ class BaseForm extends BaseFormComponent {
    * subform: default false, top level form, so have form open/close tags,
    * scrolling: default false; if true, repeating form, array of objs
    */
-  protected static $memberAttributeNames = array(
-       'subform', 'scrolling', 'template', 'baseObj', 'type',
+  protected static $instancePropertyNames = array(
+       'subform', 'scrolling', 'template', 'base_object', 'type',
 
       );
 
@@ -166,24 +166,24 @@ class BaseForm extends BaseFormComponent {
    * @return type array of saved objects
    */
 
-  public function setBaseObj($baseObj) {
-    $this->baseObj = $baseObj;
-    return $this->baseObj;
+  public function setBaseObject($base_object) {
+    $this->base_object = $base_object;
+    return $this->base_object;
   }
 
-  public function getBaseObj() {
-    return $this->baseObj;
+  public function getBaseObject() {
+    return $this->base_object;
   }
 
-  /** Overrides base method just for special treatment of ->baseObj, 
+  /** Overrides base method just for special treatment of ->base_object, 
    * (in case class name & not object makes new), then hands off to parent.
    * @param Array $args: The initialization args
    */
-  public function setMemberAttributeVals($args) {
-    if (isset($args['baseObj'])) {
-      $args['baseObj'] = $this->returnObject($args['baseObj']);
+  public function setInstancePropertyVals($args) {
+    if (isset($args['base_object'])) {
+      $args['base_object'] = $this->returnObject($args['base_object']);
     }
-    return parent::setMemberAttributeVals($args);
+    return parent::setInstancePropertyVals($args);
   }
 
   /** Takes the argument and returns it if instance of BaseModel, or tries
@@ -196,16 +196,6 @@ class BaseForm extends BaseFormComponent {
     if ($obj instanceOf BaseModel) {
       return $obj;
     }
-    if (isset($args['baseObj']) && is_string($args['baseObj'])) {
-      $className = toCamelCase($args['baseObj'], true);
-      if (!class_exists($className)) { #Bad Model Class
-        throw new \Exception("Class [$className] not defined!");
-      }
-      $baseObj = new $className();
-      if (!($baseObj instanceOf BaseModel)) {
-      }
-      $args['baseModel'] = $baseModel;
-    }
     if (is_string($obj)) {
       $className = toCamelCase($obj, true);
       if (!class_exists($className)) { #Bad Model Class
@@ -216,7 +206,7 @@ class BaseForm extends BaseFormComponent {
       throw new \Exception("Bad argument type");
     }
     if (!$newObj instanceOf BaseModel) {
-      throw new \Exception("baseObj [$className] not instanceOf BaseModel!");
+      throw new \Exception("base_object [$className] not instanceOf BaseModel!");
     }
     return $newObj;
   }
@@ -226,7 +216,7 @@ class BaseForm extends BaseFormComponent {
    * If the attribute key "name" is set, the value must either be a string,
    * or an instance of BaseModel, in which case the base class name of the 
    * instance will be used as the form name and root name of the elements, and
-   * the baseObj of the form will be set to the instance.
+   * the base_object of the form will be set to the instance.
    * 
    * @param array $attributes: Associative array of attribute names/values:
    *   [elements]: An associative array of the input elements for the form
@@ -298,7 +288,10 @@ class BaseForm extends BaseFormComponent {
       return;
     }
     if ($args instanceOf BaseModel) {
-      $this->baseObj = $args;
+      $this->base_object = $args;
+      $name = $args->getBaseName();
+
+      $this->setValuesDefault();
       return;
     }
     if (is_array($args) ) {
@@ -313,9 +306,9 @@ class BaseForm extends BaseFormComponent {
       if ($idEl === false) {
         $className = $this->name;
         $id = '';
-        if ($this->baseObj) {
-          $className = $this->baseObj->getBaseName();
-          $id = $this->baseObj->getId();
+        if ($this->base_object) {
+          $className = $this->base_object->getBaseName();
+          $id = $this->base_object->getId();
         }
         $idEl = new BaseElement(array(
           'type'=>'hidden',
@@ -338,12 +331,18 @@ class BaseForm extends BaseFormComponent {
     }
   }
 
-  public function submitToClass(Array $formData, $action=null, $save=true) {
+  public static function submitToClass(Array $formData, $action=null, $save=true) {
     $results = array();
     $formData = htmlclean($formData);
     $classNames = array_keys($formData); 
     foreach ($classNames as $className) {
-      $obj = $className::get($formData[$className]);
+      $id = 0;
+      if (isset($formData[$className]['id'])) {
+        $id = $formData[$className]['id'];
+      }
+      $obj = $className::get($id);
+      $obj->update($formData[$className]);
+      pkdebug("OBJ:", $obj, "FormData:", $formData);
       if ($save) {
         $obj->save();
       }
@@ -529,10 +528,10 @@ class BaseForm extends BaseFormComponent {
     }
     /*
     if ($elName == 'id') {#Not explicitly set or cleared, so make default..
-      if ($this->baseObj) {
-        $className = $this->baseObj->getBaseName();
+      if ($this->base_object) {
+        $className = $this->base_object->getBaseName();
         return new BaseElement(array('type'=>'hidden',
-            'name'=>unCamelCase($className)."[id]", 'value'=>$this->baseObj->getId()));
+            'name'=>unCamelCase($className)."[id]", 'value'=>$this->base_object->getId()));
 
       } else {
 
@@ -547,16 +546,16 @@ class BaseForm extends BaseFormComponent {
    * Builds a default form from an object/class instanceOf BaseModel
    * @param null|BaseModel|String $obj: An object instance of BaseModel, or
    * a String which is the name of a class descendent from BaseModel. If
-   * null, looks for the current form instance $this->baseObj;
+   * null, looks for the current form instance $this->base_object;
    * @param array $args: Optional key/value arguments -- like, maybe a template?
    */
   public function spinFormFromObject($obj = null, $args = array()) {
-    $baseObj = $this->baseObj; #default
-    if ($obj) { #override the member default baseObj
-      $baseObj = $this->returnObject($obj);
+    $base_object = $this->base_object; #default
+    if ($obj) { #override the member default base_object
+      $base_object = $this->returnObject($obj);
     }
-    if (!$baseObj instanceOf BaseModel) {
-      throw new \Exception("Couldn't get a valid baseObject");
+    if (!$base_object instanceOf BaseModel) {
+      throw new \Exception("Couldn't get a valid base_object");
     }
     #Have the object, now the hard part....
     #Build the array of names and values
@@ -675,7 +674,7 @@ class FormSet extends BaseForm {
    * @var BaseForm: The base form instance to clone & populate
    */
   protected $base_form;
-  protected $otherAttributeNames = array('base_form', 'objs', 'data');
+  protected static $otherAttributeNames = array('base_form', 'objs', 'data');
 
   public function __construct($args = null) {
     $this->scrolling = true;

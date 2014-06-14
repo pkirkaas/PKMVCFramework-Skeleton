@@ -14,7 +14,8 @@
  *
  * @author Paul
  */
-
+#TODO: Rename all references to class/instance attributes/members to: properties
+#like, $instanceProperties. Or $instancePropertyNames....
 namespace PKMVC;
 
 /**
@@ -27,8 +28,12 @@ namespace PKMVC;
  */
 class BaseFormComponent extends PKMVCBase {
   protected static $validAttributeNames = array('autocomplete', 'novalidate',);
-  protected static $memberAttributeNames = array('name', 'label', 'for');
-  protected $otherAttributeNames = array();
+  /**
+   * @var Array: Names of class/instance attribute/members/properties that
+   * can be set by initialization
+   */
+  protected static $instancePropertyNames = array('name', 'label', 'for');
+  protected static $otherAttributeNames = array();
   protected $attributes = array();
   protected $otherAttributes = array();
 
@@ -116,7 +121,7 @@ class BaseFormComponent extends PKMVCBase {
   /**
    * Performs the actual datga array building/recursion
    * TODO: Need to do somethng for collections/scrolling froms.
-   * But more important, why do we ever need this function?
+   * TODO!: But more important, why do we ever need this function?
    * @return array|scalar: The data array or subcomponent
    */
   public function getValuesRecursive() {
@@ -147,7 +152,7 @@ class BaseFormComponent extends PKMVCBase {
    * attributes
    */
   public static function getValidAttributeNames() {
-     $bfcVA = MVCLib::getAncestorArraysMerged('validAttributeNames');
+     $bfcVA = static::getAncestorArraysMerged('validAttributeNames');
      $validAttributeNames = array_flatten($bfcVA,MVCLib::$globalHtmlAttributes);
      return $validAttributeNames;
   }
@@ -160,26 +165,32 @@ class BaseFormComponent extends PKMVCBase {
    * @return Boolean: Include in input control?
    */
   public static function isValidAttribute($attr) {
-    return MVCLib::isValidAttribute($attr, static::getValidAttributeNames());
-    //return in_array($attr,static::getValidAttributeNames());
+    if (substr($attr,0,5) === 'data-') {
+      return true;
+    }
+    if (in_array($attr, static::getValidAttributeNames())) {
+      return true;
+    }
+    return false;
   }
 
   /** TODO: BAD method naming here -- get/set operate on two different things 
    *  completely
    * @param type $args
    */
-  public static function getMemberAttributeNames() {
-     return MVCLib::getAncestorArraysMerged('memberAttributeNames');
+  public static function getinstancePropertyNames() {
+     return static::getAncestorArraysMerged('instancePropertyNames');
   }
 
-  /** Two approaches: count on memberAttributeNames being set correctly, or
-   * get all object vars and see if arg keys match names....
+  /** Two approaches: count on instancePropertyNames being set correctly, or
+   * get all object properties and see if arg keys match names....
    * @param type $args
    */
-  public function setMemberAttributeVals($args) {
-    #Trust static memberAttributeNames...
+  public function setinstanceProperties($args) {
+    #Trust static instancePropertyNames...
+    $iprops = static::getInstancePropertyNames();
     foreach ($args as $key => $value) {
-      if (in_array($key, static::getMemberAttributeNames())) {
+      if (in_array($key, $iprops )) {
         $this->$key = $value;
       }
     }
@@ -242,7 +253,7 @@ class BaseFormComponent extends PKMVCBase {
    * If key name is valid attribute, adds to attribute array and
    * cleans its value
    * If any keys match this object member variable attributes as enumerated in
-   * static::$memberAttributeNames, sets those
+   * static::$instancePropertyNames, sets those
    * And all other keys of unknown provenance are saved to ->otherAttributes.
    * @param array $args: Assoc array of name/value pairs
    * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
@@ -253,7 +264,7 @@ class BaseFormComponent extends PKMVCBase {
     if (!$args || !is_array($args)) {
       return $this;
     }
-    $this->origArgs = $args;
+    $this->origArgs = $args; #Let's keep all the original args, in case...
     if (!empty($args['name_segments'])) {
       $this->nameSegments = $args['name_segments'];
     }
@@ -263,7 +274,8 @@ class BaseFormComponent extends PKMVCBase {
     $this->nameSegments[] = $this->name;
 
     #Set the "normal" attribute values first
-    $this->setMemberAttributeVals($args);
+    //$this->setAttributeVals($args);
+    $this->setInstanceProperties($args);
 
     #Args that remain are for special treatment....
     foreach ($args as $key => $val) {
@@ -275,7 +287,7 @@ class BaseFormComponent extends PKMVCBase {
         $this->attributes[$key] = static::clean($val);
       } else { #Leftover args -- save for later?
         #But don't know what they are, so don't clean
-        #We'll keep a copy of the memberAttributes here, too
+        #We'll keep a copy of the original, unclean attribute values here, too
         $this->otherAttributes[$key] = $val;
       }
     }
@@ -290,6 +302,21 @@ class BaseFormComponent extends PKMVCBase {
     }
   }
 
+
+  /** If any of the arg keys match an instance property name, set it
+   * 
+   */
+
+
+  /** Sets the HTML Element Attributes ($this->attributes) from the argument
+   * array, unless exception specified in the $exclusions array
+   * @param array assoc $args
+   * @param array indexed $exclusions
+   */
+  public function setAttributeVals($args = array(), $exclusions = array()) {
+
+  }
+  
 
   /**
    * Makes an inner attribute string from regular HTML form element attributes
@@ -371,7 +398,7 @@ class BaseElement extends BaseFormComponent {
       'checked', 'accept', 'alt', 'autofocus',
       'form', 'formaction', 'formenctype', 'formmethod', 'formnovalidate',
       'formtarget', 'height', 'list', 'max', 'maxlength', 'min', 'multiple',
-      'step', 'type', 'value', 'width',
+      'step', 'type', 'value', 'width', 'placeholder',
   );
 
   protected $ctl_pair_class="ctl-pair";
@@ -393,7 +420,7 @@ class BaseElement extends BaseFormComponent {
    * added. If don't want to bother making a form template
    * (see BaseForm documentation)
    */
-  public /*protected*/ static $validInputs = array(
+  protected static $validInputs = array(
       'input', 'textarea', 'button', 'select', 'option', 'optgroup',
       'fieldset', 'boolean', 'html', 'subform',
   );
@@ -401,7 +428,7 @@ class BaseElement extends BaseFormComponent {
   /**
    * @var array: If element instance of "input", what are valid input types? 
    */
-  public /*protected*/ static $validTypes = array(
+  protected static $validTypes = array(
       'checkbox', 'color', 'date', 'datetime', 'datetime-local', 'email', 'file',
       'hidden', 'image', 'month', 'number', 'password', 'radio', 'range', 'reset',
       'search', 'submit', 'tel', 'text', 'time', 'url', 'week', 'button',
@@ -413,30 +440,30 @@ class BaseElement extends BaseFormComponent {
    * between the open/close tags. 'select' should also be a content input,
    * but we treat it special
    */
-  public /*protected*/ static $contentInputs = array('textarea', 'button', 'label',
+  protected static $contentInputs = array('textarea', 'button', 'label',
   );
 
   /**
    * @var array: Element names/types treated specially when rendered
    */
-  public /*protected*/ static $specialInputs = array('boolean',
+  protected static $specialInputs = array('boolean',
       'select', 'subform', 'html',);
 
   /**
    * @var array: Names of key attributes from the initialization array that
    * direct members of this class, and assigned directly. 
    */
-  public /*protected*/ static $memberAttributeNames = array(
+  protected static $instancePropertyNames = array(
        'ctl_pair_class', 'input', 'type'
       );
-  public /*protected*/ static $specialAttributes = array('label', 'for', 'ctl_pair_class');
+  protected static $specialAttributes = array('label', 'for', 'ctl_pair_class');
 
   /**
    * Array of validators for this element. These are just for individual elements.
    * The form class will have its own validators for form-wide validation, for
    * example, ensuring two elements are the same,...
    */
-  public /*protected*/ $validators = array();
+  protected $validators = array();
 
   /**
    * In general, the HTML input type, but we extend that for example, with
@@ -452,13 +479,13 @@ class BaseElement extends BaseFormComponent {
    * They are parsed, and those that are valid attributes for inclusion in 
    * the input element are added here.
    */
-  public /*protected*/ $attributes = array();
+  protected $attributes = array();
 
   /**
    * @var array: Extra args NOT valid for input attribute values were passed
    * here. Fx, 'content'. Let's keep them around for something later.
    */
-  public /*protected*/ $otherAttributes = array();
+  protected $otherAttributes = array();
 
   /**
    * @var Array: Ass arr of all values required to build this input

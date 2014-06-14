@@ -282,27 +282,32 @@ class BaseController {
    * TODO: (Or, with validation errors)
    * TODO: NOT SURE I LIKE THIS HERE....
    */
-  public function processPost($entity, $form = null) {
+  public function processPost($entity, $entity_name = null) {
     if (is_string($entity)) {
       $obj = new $entity();
-      $uc_classname = unCamelCase($entity);
     } else if ($entity instanceOf BaseModel) {
       $obj = $entity;
-      $uc_classname = unCamelCase(get_class($entity));
+      if (!$entity_name) {
+        $entity_name = unCamelCase(get_class($entity));
+      }
     } else {
       throw new \Exception ("Invalid Entity submitted to processPost");
     }
 
     if ($_SERVER['REQUEST_METHOD'] == 'POST') { //Save 
       $formData = array();
-      if (isset($_POST[$uc_classname])) {
-        $formData[$uc_classname] = $_POST[$uc_classname];
+      if (isset($_POST[$entity_name])) {
+        $formData[$entity_name] = $_POST[$entity_name];
+        /*
         if (!$form) {
           $form = new BaseForm($obj);
         }
+         * 
+         */
         //Test Line
-        $form = new BaseForm();
-        $obj = $form->submitToClass($formData);
+        //$form = new BaseForm();
+        //$obj = $form->submitToClass($formData);
+        $obj = BaseForm::submitToClass($formData);
         if (($obj instanceOf BaseModel) && ($obj->getId())) {
           $id = $obj->getId();
         }

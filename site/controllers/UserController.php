@@ -125,6 +125,7 @@ class UserController extends AppController {
     }
     //$form = new BaseForm($user);
     $data = array();
+    $user = $this->processPost($user, $form);
     //$user = $this->processPost($user, $form);
     $formElements = array(
         'uname'=>array('label'=>'User Name', 'name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
@@ -133,8 +134,9 @@ class UserController extends AppController {
         'submit'=>array('type'=>'submit', 'name'=>'user[submit]', 'class'=>'input submit',
             'value'=>"Submit To Me!"),
         );
+    $formArgs = array('base_object'=>$user, 'elements'=>$formElements, 'name'=>'user');
     //$form->addElement($formElements);
-    $form = new BaseForm($formElements);
+    $form = new BaseForm($formArgs);
     //$user = $this->processPost($user, $form);
 
     #Add multi-form ....
