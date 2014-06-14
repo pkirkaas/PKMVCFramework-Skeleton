@@ -15,11 +15,13 @@
  * Paul Kirkaas, 29 November 2012
  */
 function unCamelCase($string) {
-  if (!is_string($string))
-    return '';
+  if (!is_string($string) || !strlen($string)) {
+    throw new \Exception("No string argument to unCamelCase");
+  }
   $str = strtolower(preg_replace("/([A-Z])/", "_$1", $string));
-  if ($str[0] == '_')
+  if ($str[0] == '_') {
     $str = substr($str, 1);
+  }
   return $str;
 }
 

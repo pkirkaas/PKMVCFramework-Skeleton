@@ -18,7 +18,7 @@ use PKMVC\ViewRenderer;
  
 #Define DB parameters
 define('DB_NAME',	'pkirkaas_demo');
-define('DB_SERVER','localhost');
+define('DB_HOST','localhost');
 define('DB_USER','root');
 define('DB_PASSWORD','');
 

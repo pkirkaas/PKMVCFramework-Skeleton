@@ -32,13 +32,16 @@ Abstract Class BaseUser extends BaseModel {
   protected static $idfield = 'uname'; #Can be overriden in derived class
   #public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
   #public /*protected*/ static $memberDirects = array('id', 'uname', 'password', 'salt');
-  public /*protected*/ static $memberDirects = array(
+  protected static $memberDirects = array( 'uname', 'password', 'salt',);
+  /*
+  protected static $memberDirects = array(
       'uname'=> array('dbtype'=>'varchar', 'dbindex'=>'unique', 'eltype'=>'text'),
       'password'=>array('dbtype'=>'varchar', 'eltype'=>'password'),
       'salt' => array('dbtype'=>'varchar', 'eltype'=>''),
       );
-  public /*protected*/ static $memberObjects = array();
-  public /*protected*/ static $memberCollections = array();
+  */
+  protected static $memberObjects = array();
+  protected static $memberCollections = array();
 
   /**
    * @var String: The username. Can be empty if derived class uses another field
@@ -73,6 +76,8 @@ Abstract Class BaseUser extends BaseModel {
    */
 
   public static function register($idvalue, $cpassword=null, $optargs = array()) {
+    error_log("Trying to register");
+    pkdebug("Trying to register");
     $directs = static::getMemberDirectNames();
     $class = get_called_class();
     $user = static::get();

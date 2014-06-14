@@ -52,9 +52,7 @@ function refreshNewGet(parmName, parmValue) {
   gets[parmName] = parmValue;
   //Rebuild GET query string
   var getstr = '';
-  console.log("About to loop");
   for (var parname in gets) {
-    console.log("In refrewshNewGet, parname: ", parname);
     if (gets[parname]) {
       getstr = getstr + '&' + parname + '=' + encodeURIComponent(gets[parname]);
     }
@@ -62,7 +60,6 @@ function refreshNewGet(parmName, parmValue) {
   if (getstr) {
     getstr = '?' + getstr.substr(1);
   }
-  console.log("Leaving refreshNewGet, getstr:",getstr);
   window.location = window.location.pathname + getstr;
 }
 
@@ -74,15 +71,12 @@ function getGets() {
   var queryStr = window.location.search.substr(1);
   var params = {};
   if (queryStr == '') return params;
-  console.log('queryStr: ',queryStr);
   var prmarr = queryStr.split ("&");
-  console.log('prmarr: ',prmarr);
 
   for ( var i = 0; i < prmarr.length; i++) {
       var tmparr = prmarr[i].split("=");
       params[tmparr[0]] = tmparr[1];
   }
-  console.log("in getGets, returning params:",params);
   return params;
 }
 
@@ -123,3 +117,95 @@ function roundTo2Decimals(numberToRound) {
   return Math.round(numberToRound * 100) / 100
 }
 
+/**
+ * Returns a "cousin" of the given object, as the first matched descendent
+ * of the first matched ancestor
+ * @param String parentSelector: the jQuery string for the parent to look for
+ * @param String cousinSelector: the jQuery string for the cousin to look for
+ * @param {type} me: the JS element to find the cousin of (if empty, this)
+ * @returns {jQuery} -- the cousin, as a jQuery object
+ */
+function getCousin(parentSelector, cousinSelector, me) {
+  return  getCousins(parentSelector, cousinSelector, me, true);
+}
+
+/** See definition of getCousin, above. This returns all cousins, unless the
+ * "first" parameter is true, in which case it returns only the one, first
+ * @param {type} parentSelector
+ * @param {type} cousinSelector
+ * @param {type} me
+ * @param int first: Retrun only the first cousin?
+ * @returns {getCousins.cousins}
+ */
+function getCousins(parentSelector, cousinSelector, me, first) {
+  if (me == undefined) {
+    me = this;
+  }
+  me = jQuerify(me);
+  var cousins = me.closest(parentSelector).find(cousinSelector);
+  if (first) {
+      cousins = cousins.first();
+  }
+  return cousins;
+}
+
+/**
+ * Given a JS DOM object, or a string, or a jQuery object, returns the 
+ * corresponding jquery object. Used to normalize an argument to a function 
+ * that might be any way of specifying and object
+ * @param jQuery|string|obj: arg
+ * @returns jQuery
+ */
+function jQuerify(arg) {
+  if (arg instanceof jQuery) {
+    return arg;
+  }
+  return jQuery(arg);
+}
+
+/**
+ * Adds the given class to the object, and removes all the other classes in
+ * the array.
+ * @param string classToAdd
+ * @param array classesToRemove
+ * @param jQuerifyable obj
+ * @returns the object
+ */
+function addClassAndClear(classToAdd, classesToRemove, obj) {
+  //var possibleStates = array['pass', 'fail', 'unknown'];
+  //Check for state in array of possibleStates
+  var idx = classesToRemove.indexOf(classToAdd);
+  if (idx == -1) { //Something is wrong, bail
+    return;
+  }
+  /*
+  classesToRemove.splice(idx, 1);
+  if (obj == undefined) {
+    obj = this;
+  }
+  */
+  obj = jQuerify(obj);
+  for (var idx in classesToRemove) {
+    obj.removeClass(classesToRemove[idx]);
+  }
+  obj.addClass(classToAdd);
+}
+
+/**
+ * Returns all the classes of the object
+ * @param jQuerifyable el
+ * @returns array of classes
+ */
+/* TODO: Debug at some point; getting "split of undefined" errors"
+function getClasses(el) {
+  if (el == undefined) {
+    el = this;
+  }
+  el = jQuerify(el);
+  if (!(el instanceof jQuery) ) {
+    return false;
+  }
+  var classes = el.attr('class').split(' ');
+  return classes;
+}
+*/

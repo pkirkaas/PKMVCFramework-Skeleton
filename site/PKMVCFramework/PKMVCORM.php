@@ -3,8 +3,8 @@
 namespace PKMVC;
 
 use \PDO;
-use \Exception;
 use \PDOStatement;
+use \Exception;
 use \ReflectionProperty;
 use \ReflectionClass;
 
@@ -60,7 +60,7 @@ use \ReflectionClass;
  * are currently public to use a common function across classes, but should
  * be reverted to protected when switch over to traits...
  */
-class BaseModel {
+class BaseModel extends PKMVCBase {
 
   /**
    * Array of names of member objects mapped to the foreign Class they represent.
@@ -74,7 +74,7 @@ class BaseModel {
    * key=>value pair <tt>'mother'=> 'Person'</tt> which maps the 'mother' object to
    * its class.
    */
-  public /*protected*/ static $memberObjects = array(); #Array of names of member objects
+  protected static $memberObjects = array(); #Array of names of member objects
 
   /** Array that maps collection attributes to their characteristics. A "collection"
    * attribute represents a one-to-many relationship from this object to a set of
@@ -88,7 +88,7 @@ class BaseModel {
    * 'cascade'=>true)</tt>. Where 'cascade' is optional, default to 'true', which
    * means, should a delete in this object also delete the collection item.
    */
-  public /*protected*/ static $memberCollections = array(); #Array of names of object collections
+  protected static $memberCollections = array(); #Array of names of object collections
 
   /** Can be just a one dimentional array of attribute names of this class which
    * correspond directly to field names of the underlying table -- OR --
@@ -103,9 +103,9 @@ class BaseModel {
    * descendent classes is not a priority, so we will stick to the assoc array
    * approach
    */
-  #public /*protected*/ static $memberDirects = array('id'); 
-  public /*protected*/ static $memberDirects = array(
-      'id'=>array('dbtype'=>'int', 'dbindex'=>'primary', 'eltype'=>'hidden')); 
+  protected static $memberDirects = array('id'); 
+  #public /*protected*/ static $memberDirects = array(
+      #'id'=>array('dbtype'=>'int', 'dbindex'=>'primary', 'eltype'=>'hidden')); 
 
 
   /** Every class that uses this object model will have a primary key "id":
@@ -174,7 +174,6 @@ class BaseModel {
    */
   public static function get($idOrArray = null) {
     $class = get_called_class();
-    pkdebug("HERE:, CLASS: [$class]; IDORARR:", $idOrArray);
     $id = null;
     $baseName = static::getBaseName();
     if (empty($idOrArray)) { #create new empty object
@@ -373,7 +372,7 @@ class BaseModel {
     if ($id) {
       //$table_name = unCamelCase(get_class($this));
       $baseName = static::getBaseName();
-      $table_name = unCamelCase($baseName);
+      $table_name = $baseName::getTableName();
       $paramArr = array('id' => $id);
       $paramStr = "DELETE FROM `$table_name` WHERE `id` = :id";
       prepare_and_execute($paramStr, $paramArr);
@@ -402,27 +401,34 @@ class BaseModel {
    * @return Array: Merged array of hierarchy
    */
 
+  /*
    public static function getMemberMerged($attributeName, $idx = false) {
      $class = get_called_class();
      return MVCLib::getMemberMerged($class, $attributeName, $idx);
    }
+   * 
+   */
 
 
   /** Returns the member directs. Merges the heirarch
    * 
    */
   public static function getMemberDirects() {
-    return static::getMemberMerged('memberDirects',true);
+    return static::getAncestorArraysMerged('memberDirects',true);
   }
 
   /** Returns what was the original memberDirects structure, which is just
    * an indexed array of direct member names, from array_keys
-   * @return type
+   * TODO: Figure out if we are going to use indirect member direct keys or what
+   * @return Array of direct member names
    */
   public static function getMemberDirectNames() {
+    return static::getAncestorArraysMerged('memberDirects',true);
+    /*
     $memberDirectArrays = static::getMemberMerged('memberDirects',true);
     $memberDirectNames = array_keys($memberDirectArrays);
     return $memberDirectNames;
+    */
   }
 
   /** Returns the default value of member collections. Currently just
@@ -430,7 +436,7 @@ class BaseModel {
    */
   public static function getMemberObjects() {
     //return static::$memberObjects;
-    return static::getMemberMerged('memberObjects');
+    return static::getAncestorArraysMerged('memberObjects');
   }
 
 
@@ -439,7 +445,7 @@ class BaseModel {
    */
   public static function getMemberCollections() {
     //return static::$memberCollections;
-    return static::getMemberMerged('memberCollections');
+    return static::getAncestorArraysMerged('memberCollections');
   }
 
   /** Queries the table with arguments in $args */
@@ -481,7 +487,7 @@ class BaseModel {
    */
   public static function getAsArrays($params = null, $orderBy = 'id') {
     $fullClassName = get_called_class();
-#    $table_name = unCamelCase($className);
+#    $table_name = $className::getTableName();
 
     $retval = getArraysFromTable($fullClassName, $params, $orderBy); // $val, $field_name, $orderBy);
     return $retval;
@@ -535,8 +541,10 @@ class BaseModel {
    * Currently just the ::$memberDirects array.
    */
   public static function getDirectFields() {
-    //return static::$memberDirects;
-    return static::getMemberDirectNames();
+    return static::getMemberDirects();
+    #return static::$memberDirects;
+#(Restore if use memberDirects to hold additional info?)
+    //return static::getMemberDirectNames();
   }
 
   /** Just returns the default name of the underlying table based
@@ -544,8 +552,13 @@ class BaseModel {
    * @return String: $table_name
    */
   public static function getTableName() {
+    global $nc_config;
+    $table_prefix = '';
+    if (!empty($nc_config['table_prefix'])) {
+      $table_prefix = $nc_config['table_prefix'];
+    }
     $baseName = static::getBaseName();
-    $table_name = unCamelCase($baseName);
+    $table_name = $table_prefix.unCamelCase($baseName);
     return $table_name;
   }
 
@@ -780,12 +793,12 @@ class BaseModel {
    * or initializing array of data, which we initialize the new object with
    */
   protected function __construct($arg = null) {
+    $class = get_class($this);
     if (empty($arg)) { #A new object.
       return;
     }
     #$arg should be an object integer ID, an array with a key 'id' set to 
     #a non-zero object ID, or an array of data for a new/non-persisted object
-    $class = get_class($this);
     if (is_numeric($arg) && intval($arg)) {
       $id = intval($arg);
     } else if (is_array($arg)) {
@@ -933,9 +946,8 @@ class BaseModel {
    * even if $arr['attr'] doesn't exist.
    */
   public function exchangeArray($data, $recursive = false) {
-    return $this->update($data,true, $recursive);
+    //return $this->update($data,true, $recursive);
 
-    /*
     $this->makeDirty();
     $directFields = static::getDirectFields();
     foreach ($directFields as $directField) {
@@ -944,6 +956,12 @@ class BaseModel {
         $this->$directField = $data[$direct_field];
       }
     }
+    return $this;
+
+
+
+
+
     if ($recursive) {
       $collections = $this->getCollections();
       foreach ($collections as $collectionName => $collection) {
@@ -953,12 +971,13 @@ class BaseModel {
           $this->$collectionName = array();
           foreach ($coll_items as $coll_item) {
             $collectionClassName = static::collectionClassName();
-            $this->$collectionName[] =
+            $this->{$collectionName}[] =
                     $collectionClassName::get($coll_item);
           }
         }
       }
     }
+    /*
      * 
      */
     
@@ -1093,8 +1112,9 @@ class BaseModel {
     $fullClass = get_class($this);
     if (!$objectType) {
       $objectType = toCamelCase($objectName, true);
-      $tableName = unCamelCase($objectName);
-    } else $tableName = unCamelCase($objectType);
+      //$tableName = unCamelCase($objectName);
+      $tableName = $objectName::getTableName();
+    } else $tableName = $objectType::getTableName();
 
     $field_id = unCamelCase($objectName) . '_id';
     if ($this->$field_id) {
@@ -1170,7 +1190,8 @@ class BaseModel {
     #Could be a non-persisted member....
     $className = get_class($this);
     $memberCollections = static::getMemberCollections();
-    if (in_array($name, static::getMemberDirectNames())) { //it's a member direct'
+    //if (in_array($name, static::getMemberDirectNames())) { //it's a member direct'
+    if (in_array($name, static::getMemberDirects())) { //it's a member direct'
       return $this->$name;
     }
     if (in_array($name, array_keys(static::getMemberObjects()))) { //it's a member object'
@@ -1222,7 +1243,7 @@ class BaseModel {
    */
   public function save() {
     $baseName = static::getBaseName();
-    $table = unCamelCase($baseName);
+    $table = static::getTableName(); //unCamelCase($baseName);
     $this->saveDirects(); // Will also set id if new object
     if (!isset(static::$instantiations[$baseName])) {
       static::$instantiations[$baseName] = array();
@@ -1297,7 +1318,7 @@ class BaseModel {
     $memberCollections = static::getMemberCollections();
     $baseCollClassName = $memberCollections[$fieldname]['classname'];
     $foreignKey = $memberCollections[$fieldname]['foreignkey'];
-    $tableName = unCamelCase($baseCollClassName);
+    $tableName = $baseCollClassName::getTableName();
 
     if (empty($objArr) || !sizeof($objArr)) {#Empty collection -- delete all?
       if ($deleteAbsent) {
@@ -1404,7 +1425,6 @@ class BaseModel {
             $res[] = $collClassName::get($subel);
           }
           $this->$key = $res;
-          #pkdebug("PopFromArray: THIS:", $this, "RES:", $res);
         }
       }
     }
@@ -1426,7 +1446,7 @@ class BaseModel {
    */
   public static function getObjectsThatMatch(Array $params = array(), $orderBy = 'id') {
     $baseName = static::getBaseName();
-    $tableName = unCamelCase($baseName);
+    $tableName = $baseName::getTableName();
     if (is_array($params) && sizeof($params)) {
       $argArr = pre_prepare_data($params);
       $queryStr = $argArr['queryString'];
@@ -1466,11 +1486,10 @@ class BaseModel {
    */
   public static function getRowsThatMatch(Array $params, $orderBy = 'id') {
     $baseName = static::getBaseName();
-    $tableName = unCamelCase($baseName);
+    $tableName = $baseName::getTableName();
     $argArr = pre_prepare_data($params);
     $queryStr = $argArr['queryString'];
     $paramArr = $argArr['paramArr'];
-    //pkdebug("input Params:",$params, "Ret from pre_prep", $argArr);
     $fullQS = "SELECT * FROM `$tableName` WHERE $queryStr";
     if ($orderBy && is_string($orderBy)) {
       //Can't paramaterize field names, so check orderBy in table:
@@ -1681,7 +1700,7 @@ function getArraysFromTable($objectOrClassName, $params = null, $orderBy = 'id')
   }
 //$namespace = BaseModel::getNamespaceName($fullClassName);
   $baseName = BaseModel::getBaseName($fullClassName);
-  $table_name = unCamelCase($baseName);
+  $table_name = $baseName::getTableName();
   if (is_numeric($params) && intval($params)) {
     $params = array('id' => intval($params));
   } else if (!is_array($params)) {
@@ -1796,7 +1815,9 @@ function idxArrayToPDOParams($array) {
 }
 
 /** Check if a field exists in a table */
+#TODO: Restore when find out why didn't work on a server
 function doesFieldExist($field, $table) {
+  return true;
   $field = unCamelCase($field);
   $table = unCamelCase($table);
   $dbName = getDatabaseName();

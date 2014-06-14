@@ -25,4 +25,4 @@ $controller = isset($segments[0]) ? $segments[0] : 'index';
 array_shift($segments);
 array_shift($segments);
 $app = new Application();
-$app->run($controller, $action, $segments);
+$app->run($controller, $action, $segments, true);

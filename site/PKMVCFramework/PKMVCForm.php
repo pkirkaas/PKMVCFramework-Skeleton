@@ -86,6 +86,10 @@ class BaseForm extends BaseFormComponent {
   protected $id = '';
    * 
    */
+  protected static $classDefaultAttributes = array(
+      'enctype'=>'multipart/form-data',
+      'method' => 'POST',
+      );
   protected $renderResult = null;
 
   /** An array of valid HTML FORM attributes - if they are included as param
@@ -96,7 +100,7 @@ class BaseForm extends BaseFormComponent {
    * HTML Global attributes which are not specific to form elements and not
    * in this array.
    */
-  public /*protected*/ static $validAttributes = array (
+  protected static $validAttributeNamess = array (
       'action', 'enctype', 'method', 'name', 
   );
 
@@ -107,7 +111,7 @@ class BaseForm extends BaseFormComponent {
    * subform: default false, top level form, so have form open/close tags,
    * scrolling: default false; if true, repeating form, array of objs
    */
-  public /*protected*/ static $memberAttributes = array(
+  protected static $memberAttributeNames = array(
        'subform', 'scrolling', 'template', 'baseObj', 'type',
 
       );
@@ -129,7 +133,7 @@ class BaseForm extends BaseFormComponent {
    * @var array: $key=>$value pairs of form attributes & values (like,
    * class, action, method, etc)
    */
-  public /*protected*/ $attributes = array(); 
+  protected $attributes = array(); 
 
   /**
    *
@@ -218,25 +222,38 @@ class BaseForm extends BaseFormComponent {
   }
 
   /**
-   * Sets the attributes of the form
-   * @param array $attributes: Associative array of attribute names/values
+   * Sets the attributes of the form, and the elements, if that key is set.
+   * If the attribute key "name" is set, the value must either be a string,
+   * or an instance of BaseModel, in which case the base class name of the 
+   * instance will be used as the form name and root name of the elements, and
+   * the baseObj of the form will be set to the instance.
+   * 
+   * @param array $attributes: Associative array of attribute names/values:
+   *   [elements]: An associative array of the input elements for the form
+   *   [instance]: The BaseModel derived instance associated with the form.
+   *       If there is no 'name' key in args, and if 'name' is not already set,
+   *       the base class name of the instance will be used for the name of
+   *       the form and the root of the element names in the form (for posting)
+   *   [{attribute names}]: Other HTML Attribute names, to be included in the
+   *        form tag
+   *   [{otherAttributes}]: Any keys not otherwise matched are added to the 
+   *        $this->otherAttributes array
+   * 
    * If "elements" is a key, the value must be an assoc array of name/value
    * pairs, where the name key is the form element name and the value is either
    * an element instance or an array that can be used to create the element
    * @return \PKMVC\BaseForm
    */
-  public function setValues(Array $attributes) {
-    parent::setValues($attributes);
+  public function setValues(Array $attributes = array(), $exclusions = array()) {
+    parent::setValues($attributes); #Takes care of the regular attributes
     #Set elements if present....
     if (isset($attributes['elements'])) {
       $this->addElement($attributes['elements']);
-
-
-
-
       $elements = $attributes['elements']; 
       foreach ($elements as $key => $value) { 
-        if ($value instanceOf BaseFormComponent) {
+        if ($key == 'name') {
+
+        } else if ($value instanceOf BaseFormComponent) {
           $this->elements[$key] = $value;
         } else if (is_array($value)) {
           if (isset($value['subform'])) {
@@ -253,23 +270,31 @@ class BaseForm extends BaseFormComponent {
           throw new \Exception("Invalid el type: [$elType] for key: [$key]'");
         }
       }
-
-
     }
+    $this->setValuesDefault(); #If method, enctype, etc, not set, set to default
     return $this;
   }
 
 
-  /** Initialize with a model object, or an assoc key/value array
+  /** Initialize with a model object, or an assoc key/value array, or nothing.
+   * If nothing, still sets the default values like method and enctype.
+   * 
+   * IF ARGS ARRAY IS GIVEN: Must include a 'name' key, which can be either
+   * a string name, or an instance of BaseModel, in which case the object will
+   * be stored with the form and the base class name will be used for both 
+   * the form name, and the root of the element 'names', to set the keys
+   * of the eventual "POST"/submission.
    * 
    * @param \PKMVC\BaseModel|Array $args: If assoc array, keys should
    * correspond to member attribute names. Can include array of elements
    * @return null;
    */
-  public function __construct($args = null, $subform = false) {
+  public function __construct($args = array(), $subform = false) {
+
     $this->subform = $subform;
     $this->elements = new PartialSet();
     if (!$args) {
+      $this->setValuesDefault();
       return;
     }
     if ($args instanceOf BaseModel) {
@@ -314,12 +339,10 @@ class BaseForm extends BaseFormComponent {
   }
 
   public function submitToClass(Array $formData, $action=null, $save=true) {
-    //pkdebug("Submitting:", $formData);
     $results = array();
     $formData = htmlclean($formData);
     $classNames = array_keys($formData); 
     foreach ($classNames as $className) {
-      pkdebug("Trying to make/save an object of:  [$className] with data: ", $formData[$className]);
       $obj = $className::get($formData[$className]);
       if ($save) {
         $obj->save();
@@ -328,8 +351,6 @@ class BaseForm extends BaseFormComponent {
       //Debug....
       break;
     }
-    //return $results;
-      //pkdebug("The RETURNING Object is:", $obj);
     return $obj;
   }
 
@@ -654,7 +675,7 @@ class FormSet extends BaseForm {
    * @var BaseForm: The base form instance to clone & populate
    */
   protected $base_form;
-  public /*protected*/ $otherAttributeNames = array('base_form', 'objs', 'data');
+  protected $otherAttributeNames = array('base_form', 'objs', 'data');
 
   public function __construct($args = null) {
     $this->scrolling = true;

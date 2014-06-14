@@ -14,6 +14,7 @@
  */
 
 require_once __DIR__.'/dbconnection.php';
+require_once __DIR__.'/PKMVCBase.php';
 require_once __DIR__.'/PKMVCApplication.php';
 require_once __DIR__.'/PKMVCController.php';
 require_once __DIR__.'/PKMVCRenderer.php';

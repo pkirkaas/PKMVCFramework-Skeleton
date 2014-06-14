@@ -19,13 +19,27 @@ namespace PKMVC;
 
 /**
  * The base class for forms, subforms, and form elements (controls)
+ * Naming Overload: All the angle-bracket enclosed stuff in HTML are
+ * Elements - Here we use "Element" to mean "Submit" elements -- that is,
+ * forms, inputs, etc. Furthermore, the "Form" class includes the "subform"
+ * concept, which is just a collection of input elements, without an enclosing
+ * "form" tag. The BaseFormComponent is the mother to them all....
  */
-class BaseFormComponent {
-  public /*protected*/ static $validAttributes = array('autocomplete', 'novalidate',);
-  public /*protected*/ static $memberAttributes = array('name', 'label', 'for');
-  public /*protected*/ $otherAttributeNames = array();
-  public /*protected*/ $attributes = array();
-  public /*protected*/ $otherAttributes = array();
+class BaseFormComponent extends PKMVCBase {
+  protected static $validAttributeNames = array('autocomplete', 'novalidate',);
+  protected static $memberAttributeNames = array('name', 'label', 'for');
+  protected $otherAttributeNames = array();
+  protected $attributes = array();
+  protected $otherAttributes = array();
+
+  /**
+   *
+   * @var array: key/value pairs of default attributes if none explicitly set
+   * in setValues. For example, for the BaseForm class, are:
+   * ('method'=>'post', 'enctype'=>'multipart/form-data', etc...;
+   */
+  protected static $classDefaultAttributes = array();
+
 
 
   /** @var array: Hack to exclude certain legitimate HTML attribute values from being 
@@ -86,6 +100,20 @@ class BaseFormComponent {
   }
 
   /**
+   * Slightly hackish: Set class default attributes after all other attributes
+   * applied. Has to be called at the end, so explicitly by any class who wants
+   * to use it, at the bottom of their regular "setValues" definition.
+   * Uses the class static attribute array:  $classDefaultAttributes
+   */
+  protected function setValuesDefault() {
+    foreach (static::$classDefaultAttributes as $key => $value) {
+      if (!array_key_exists($key, $this->attributes)) {
+        $this->attributes[$key]=$value;
+      }
+    }
+  }
+
+  /**
    * Performs the actual datga array building/recursion
    * TODO: Need to do somethng for collections/scrolling froms.
    * But more important, why do we ever need this function?
@@ -118,42 +146,40 @@ class BaseFormComponent {
    * Climbs the ancestor hierarchy of attributes, and adds global HTML
    * attributes
    */
-  public static function getValidAttributes() {
-     $class = get_called_class();
-     $bfcVA = MVCLib::getMemberMerged($class, 'validAttributes');
-     $validAttributes = array_flatten($bfcVA,MVCLib::$globalHtmlAttributes);
-     return $validAttributes;
+  public static function getValidAttributeNames() {
+     $bfcVA = MVCLib::getAncestorArraysMerged('validAttributeNames');
+     $validAttributeNames = array_flatten($bfcVA,MVCLib::$globalHtmlAttributes);
+     return $validAttributeNames;
   }
 
   /**
    * Verifies if the named attribute belongs as an attribute in the input
-   * element. Aside from just checking if in_array of validAttributes, makes
+   * element. Aside from just checking if in_array of validAttributeNames, makes
    * *dispensation for attributes starting with 'data-'.
    * @param String $attr: attribute name
    * @return Boolean: Include in input control?
    */
   public static function isValidAttribute($attr) {
-    //return MVCLib::isValidAttribute($attr, static::$validAttributes);
-    return in_array($attr,static::getValidAttributes());
+    return MVCLib::isValidAttribute($attr, static::getValidAttributeNames());
+    //return in_array($attr,static::getValidAttributeNames());
   }
 
   /** TODO: BAD method naming here -- get/set operate on two different things 
    *  completely
    * @param type $args
    */
-  public static function getMemberAttributes() {
-     $class = get_called_class();
-     return MVCLib::getMemberMerged($class, 'memberAttributes');
+  public static function getMemberAttributeNames() {
+     return MVCLib::getAncestorArraysMerged('memberAttributeNames');
   }
 
-  /** Two approaches: count on memberAttributes being set correctly, or
+  /** Two approaches: count on memberAttributeNames being set correctly, or
    * get all object vars and see if arg keys match names....
    * @param type $args
    */
   public function setMemberAttributeVals($args) {
-    #Trust static memberAttributes...
+    #Trust static memberAttributeNames...
     foreach ($args as $key => $value) {
-      if (in_array($key, static::getMemberAttributes())) {
+      if (in_array($key, static::getMemberAttributeNames())) {
         $this->$key = $value;
       }
     }
@@ -216,18 +242,17 @@ class BaseFormComponent {
    * If key name is valid attribute, adds to attribute array and
    * cleans its value
    * If any keys match this object member variable attributes as enumerated in
-   * static::$memberAttributes, sets those
+   * static::$memberAttributeNames, sets those
    * And all other keys of unknown provenance are saved to ->otherAttributes.
    * @param array $args: Assoc array of name/value pairs
    * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
    * be inclduded between the open and close tags
    */
 
-  public function setValues($args = array(), $exclusions = array()) {
+  public function setValues(Array $args = array(), $exclusions = array()) {
     if (!$args || !is_array($args)) {
       return $this;
     }
-    pkdebug ("Setting Values. ARGS:", $args);
     $this->origArgs = $args;
     if (!empty($args['name_segments'])) {
       $this->nameSegments = $args['name_segments'];
@@ -237,14 +262,16 @@ class BaseFormComponent {
     }
     $this->nameSegments[] = $this->name;
 
+    #Set the "normal" attribute values first
     $this->setMemberAttributeVals($args);
+
+    #Args that remain are for special treatment....
     foreach ($args as $key => $val) {
       //if (($key == 'input') || ($key == 'type')) {
       if (in_array($key, static::$valueExclusions) 
         || in_array($key,$exclusions)) {#For some reason, we want to skip these
         continue;
       } else if (static::isValidAttribute($key)) {
-        pkdebug("KEY: [$key], val:", $val);
         $this->attributes[$key] = static::clean($val);
       } else { #Leftover args -- save for later?
         #But don't know what they are, so don't clean
@@ -337,7 +364,7 @@ class BaseElement extends BaseFormComponent {
    * HTML Global attributes which are not specific to form elements and not
    * in this array.
    */
-  public /*protected*/ static $validAttributes = array(
+  protected static $validAttributeNames = array(
       'accesskey', 'class', 'contenteditable', 'contextmenu', 'dir',
       'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck',
       'style', 'tabindex', 'title', 'translate',  'name',
@@ -399,7 +426,7 @@ class BaseElement extends BaseFormComponent {
    * @var array: Names of key attributes from the initialization array that
    * direct members of this class, and assigned directly. 
    */
-  public /*protected*/ static $memberAttributes = array(
+  public /*protected*/ static $memberAttributeNames = array(
        'ctl_pair_class', 'input', 'type'
       );
   public /*protected*/ static $specialAttributes = array('label', 'for', 'ctl_pair_class');
@@ -461,7 +488,7 @@ class BaseElement extends BaseFormComponent {
    * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
    * be inclduded between the open and close tags
    */
-  public function setValues($args = array()) {
+  public function setValues(Array $args = array(), $exclusions = array()) {
     parent::setValues($args);
     if (($this->input == 'input') && !$this->type) {
       $this->type = 'text';

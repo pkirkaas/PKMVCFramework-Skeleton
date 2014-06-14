@@ -160,7 +160,6 @@ class BaseController {
       }
     }
     $redirectUrl = $url.$path.$getStr;
-    //pkdebug("The attempted redirect URL: [$redirectUrl]");
     header("Location: $redirectUrl");
     return;
   }
@@ -281,6 +280,7 @@ class BaseController {
    * like, 'user', or an instance of that object
    * @return BaseModel instance: The object updated by the Post data
    * TODO: (Or, with validation errors)
+   * TODO: NOT SURE I LIKE THIS HERE....
    */
   public function processPost($entity, $form = null) {
     if (is_string($entity)) {
@@ -295,25 +295,20 @@ class BaseController {
 
     if ($_SERVER['REQUEST_METHOD'] == 'POST') { //Save 
       $formData = array();
-      //pkdebug("Request is POST: is uc_classname: [$uc_classname]");
       if (isset($_POST[$uc_classname])) {
-        //pkdebug("Indeed it IS!! And the post data for it is:", $_POST[$uc_classname]);
         $formData[$uc_classname] = $_POST[$uc_classname];
         if (!$form) {
           $form = new BaseForm($obj);
         }
         //Test Line
         $form = new BaseForm();
-        //pkdebug("FORMDATA BEFORE SUBMIT:", $formData);
         $obj = $form->submitToClass($formData);
-        //pkdebug("OBJ AFTER SUBMIT:", $obj);
         if (($obj instanceOf BaseModel) && ($obj->getId())) {
           $id = $obj->getId();
         }
         return $obj;
       }
     }
-    pkdebug("Should I be here, returning:", $obj);
     return $obj;
   }
 

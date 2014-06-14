@@ -35,6 +35,8 @@ class UserController extends AppController {
    * processes the form after submission
    */
   public function registerAction() {
+    error_log("Trying to register");
+    pkdebug("Trying to register");
     $form = new BaseForm();
 
     if (($_SERVER['REQUEST_METHOD'] == 'POST')) { //Save -- form submitted
@@ -118,31 +120,40 @@ class UserController extends AppController {
    */
   public function profileAction() {
     $user = User::getCurrent();
-    $form = new BaseForm($user);
+    if (!$user instanceOf BaseUser) {
+      throw new \Exception ("No current user in Profile action");
+    }
+    //$form = new BaseForm($user);
     $data = array();
-    $user = $this->processPost($user, $form);
+    //$user = $this->processPost($user, $form);
     $formElements = array(
-        'uname'=>array('name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
-        'email'=>array('name'=>'user[email]', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
+        'uname'=>array('label'=>'User Name', 'name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
+        'email'=>array('label'=>'Email?', 'name'=>'user[email]', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
      //   'profiles'=>array('type'=>'subform','name'=>'user[profiles]', 'items'=>$user->getProfiles()),
         'submit'=>array('type'=>'submit', 'name'=>'user[submit]', 'class'=>'input submit',
             'value'=>"Submit To Me!"),
         );
-    $form->addElement($formElements);
+    //$form->addElement($formElements);
+    $form = new BaseForm($formElements);
+    //$user = $this->processPost($user, $form);
 
     #Add multi-form ....
     $profiles_cnt = 0; #Increment when have existing profiles...
     //$subform = BaseForm::multiSubFormsSetup('profiles', 'Profile', 'forms/profilelineitem' /*How are items passed here?*/);
     //$subformdisp = new RenderResult(array('idx'=>$profiles_cnt, 'collection_subform'=>(new RenderResult($subform, 'forms/profilesubform'))), 'forms/basecollection');
     //$form ->addElement('psubform',$subformdisp);
-    pkdebug("After Process Post; Form:", $form, "User:", $user);
-    //pkdebug("POST:", $_POST);
 
 
     
     $data['form'] = $form;
     return $data;
   }
+
+
+  /** Experimenting with new form type/initialization - 
+   * 
+   * @return \PKMVC\BaseForm
+   */
   public function playAction() {
     $els = array('name'=>'user','elements'=>array(
       array('input'=>'html','content'=>"<h2>This is the Form</h2>"),

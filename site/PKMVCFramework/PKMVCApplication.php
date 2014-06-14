@@ -129,14 +129,23 @@ Class Application extends ApplicationBase {
   public $controller;
   public $action;
   public function __construct(Array $args = null) {
-  }
+}
 
-  public function run( $controller = null, $action = null, $args=null) {
+/**
+ * Runs the application with the arguments. "$standalone" indicates whether it is
+ * a stand-alone application (true), or a component of another application 
+ * (like, a WordPress plugin), default "false".
+ */
+  public function run( $controller = null, $action = null, $args=null, $standalone = false) {
     #TODO: Lame attempt at session security. Redo
-    session_start();
-    session_regenerate_id();
-
-    $results = static::layout($controller, $action, $args);
-    echo $results;
+    if ($standalone) {
+      session_start();
+      session_regenerate_id();
+      $results = static::layout($controller, $action, $args);
+      echo $results;
+    } else {
+      $results = static::exec($controller, $action, $args);
+      return $results;
+    }
   }
 }

@@ -93,6 +93,9 @@ class MVCLib {
      //$class = get_called_class();
      $retArr[]=$class::$$attributeName; #Deliberate double $$
      while ($par = get_parent_class($class)) {
+       if(! property_exists($par, $attributeName)) {
+         break;
+       }
       $retArr[]=$par::$$attributeName;
       $class=$par;
     }

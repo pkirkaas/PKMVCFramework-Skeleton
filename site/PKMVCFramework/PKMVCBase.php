@@ -1,0 +1,64 @@
+<?php
+
+/**
+ * PKMVC Framework 
+ *
+ * @author    Paul Kirkaas
+ * @email     p.kirkaas@gmail.com
+ * @link     
+ * @copyright Copyright (c) 2012-2014 Paul Kirkaas. All rights Reserved
+ * @license   http://opensource.org/licenses/BSD-3-Clause  
+ */
+
+/**
+ * The absolute PKMVC Base Class that all other PKMVC Components extend. This
+ * is to provide some common utility methods to all classes. For example, the
+ * feature to combine static arrays up the ancestor hierarchy - getArraysMerged
+ *
+ * @author Paul
+ */
+namespace PKMVC;
+class PKMVCBase {
+  /**
+   * Recurse up through inheretence hierarchy and merge static arrays of
+   * the given arrayName name. This is for use by ::getMemberDirects(),
+   * ::getMemberObjects, ::getMemberCollections()... to support deep object/class
+   * inheritence. For example, BaseModel has "memberDirects=array('id');".
+   * Child class "BaseUser extends BaseModel" has "memberDirects=array('uname')"
+   * Your child user class might be "MyUser extends BaseUser", and 
+   * MyUser::memberDirects = array('myextrastuff');
+   *
+   * So MyUser::getMemberDirects() should return "array('id','uname','myextrastuff');
+   * etc.
+   *
+   * This static function is used by the various "getMemberXXX()" functions, and
+   * returns a merged array, with child definitions overriding base defs.
+   * @param String class: The calling class
+   * @param $arrayName String: the name of the attribute: memberDirects,
+   *  memberObjects, or memberCollections (for now)
+   * @param $idx Boolean: is the array type indexed or associative? Used for 
+   *   merging strategy - $memberDirects are indexed, others assoc.
+   * @return Array: Merged array of hierarchy
+   */
+  protected static function getAncestorArraysMerged($arrayName, $idx = false) {
+     #First, build array of arrays....
+     $retArr = array();
+     $class = get_called_class();
+     $retArr[]=$class::$$arrayName; #Deliberate double $$
+     while ($par = get_parent_class($class)) {
+       if(! property_exists($par, $arrayName)) {
+         break;
+       }
+      $retArr[]=$par::$$arrayName;
+      $class=$par;
+    }
+    #Now merge. Reverse order so child settings override ancestors...
+    $retArr = array_reverse($retArr);
+    $mgArr = call_user_func_array('array_merge',$retArr);
+    if ($idx) { #Indexed array, return only unique values. For 'memberDirects'
+      #Mainly to save the developer who respecifies 'id' in the derived direct
+      $mgArr = array_unique($mgArr);
+    }
+    return $mgArr;
+  }
+}
