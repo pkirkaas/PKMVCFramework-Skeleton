@@ -39,9 +39,9 @@ class Profile extends BaseModel {
   static $memberDirects = array(
     'name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
     'user_id',
-    'prof_description'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
-    'prof_display_name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
-    'prof_name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'profile_description'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'profile_display_name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'profile_name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
     'aboutme'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
     'avatar_link'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
     'obf_link'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),

@@ -125,12 +125,12 @@ class UserController extends AppController {
     }
     //$form = new BaseForm($user);
     $data = array();
-    $user = $this->processPost($user, $form);
+    $user = $this->processPost($user);
     //$user = $this->processPost($user, $form);
     $formElements = array(
         'uname'=>array('label'=>'User Name', 'name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
         'email'=>array('label'=>'Email?', 'name'=>'user[email]', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
-     //   'profiles'=>array('type'=>'subform','name'=>'user[profiles]', 'items'=>$user->getProfiles()),
+        'profiles'=>array('type'=>'subform','scrolling'>true,'name'=>'user[profiles]', 'items'=>$user->getProfiles()),
         'submit'=>array('type'=>'submit', 'name'=>'user[submit]', 'class'=>'input submit',
             'value'=>"Submit To Me!"),
         );

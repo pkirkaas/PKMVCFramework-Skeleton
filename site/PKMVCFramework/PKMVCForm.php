@@ -359,22 +359,8 @@ class BaseForm extends BaseFormComponent {
    * a hidden ID element, and generate it if it's not already set?
    */
   public function openForm($echoId = true) {
-    /*
-    $formTag = "\n<form class='{$this->class}' method='{$this->method}'
-      action='{$this->action}' id={$this->id}' enctype='{$this->enctype}' 
-        name='{$this->name}' >\n";
-     * 
-     */
     $attrStr = $this->makeAttrStr();
-    $formTag = "\n<form $attrStr >";
-    /*
-    if ($echoId) {
-      $formTag .= $this->getElement('id');
-      if (array_key_exists('id', $this->elements)) {
-        unset($this->elements['id']); #If already output here, don't do again
-      }
-    }
-     */
+    $formTag = "\n<form $attrStr >\n";
     return $formTag;
   }
 
@@ -525,19 +511,6 @@ class BaseForm extends BaseFormComponent {
     } else {
       return false;
     }
-    /*
-    if ($elName == 'id') {#Not explicitly set or cleared, so make default..
-      if ($this->base_object) {
-        $className = $this->base_object->getBaseName();
-        return new BaseElement(array('type'=>'hidden',
-            'name'=>unCamelCase($className)."[id]", 'value'=>$this->base_object->getId()));
-
-      } else {
-
-      }
-    }
-     * 
-     */
   }
 
 
@@ -548,6 +521,8 @@ class BaseForm extends BaseFormComponent {
    * null, looks for the current form instance $this->base_object;
    * @param array $args: Optional key/value arguments -- like, maybe a template?
    */
+  #TODO: Cancel! Nice notion, not sustainable now....
+  /*
   public function spinFormFromObject($obj = null, $args = array()) {
     $base_object = $this->base_object; #default
     if ($obj) { #override the member default base_object
@@ -561,6 +536,8 @@ class BaseForm extends BaseFormComponent {
     
 
   }
+   * 
+   */
 
 
   ########## Methods to support repeating/scrolling forms/subforms - with
@@ -596,7 +573,7 @@ class BaseForm extends BaseFormComponent {
  
  
  The HTML string representing the subform, with existing items,
- * create/delete buttons, etc.
+ * create/delete buttons, template, etc.
  */
 
 public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = null, Array $items = array()) {

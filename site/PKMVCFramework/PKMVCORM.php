@@ -114,12 +114,12 @@ class BaseModel extends PKMVCBase {
    * 'key': PRIMARY, UNIQUE, or true. Default: none
    * 'dbtype': Any SQL type; default: INT
    * 'ai': true. Default: false
-   * 'canbenull': true/false: default: true;
+   * 'notnull': true/false: default: false;
    * 'dbdefault': any MySQL default type.
    * 
    */
   public static $sqlKeys = array('dbtype', 'key', 'ai', 'collength',
-      'canbenull', 'default',
+      'notnull', 'default',
       );
 
   /**
@@ -513,12 +513,18 @@ class BaseModel extends PKMVCBase {
     return $sqlSuggestions;
   }
 
+  /**
+   * Creates a suggested SQL string to create/update the DB to reflect the 
+   * fields specified in the application models.
+   * 
+   * @param boolean $alter: If false, gives the suggest SQL commands to 
+   * create all the tables as defined in the models. 
+   * If true, examines the current DB & table structure, and only creates
+   * missing tables, and adds new fields specified in the model but don't 
+   * exist in the current tables.
+   * @return string: The suggested SQL string to create/alter tables
+   */
   public static function makeSqlString($alter = false) {
-    /*
-     * 
-function getTableFields($tableName) {
-function doesTableExist($tableName) {
-     */
     $tableFields = array();
     $tableName = static::getTableName();
     if (!doesTableExist($tableName)) {
@@ -554,7 +560,7 @@ function doesTableExist($tableName) {
       if (isset($sqlEl['collength'])) {
         $colStr .= "({$sqlEl['collength']}) ";
       }
-      if (empty($sqlEl['canbenull'])) {
+      if (!empty($sqlEl['notnull'])) {
         $colStr .= " NOT NULL ";
       }
       if (!empty($sqlEl['ai'])) {
