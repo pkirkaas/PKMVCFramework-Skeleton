@@ -118,7 +118,9 @@ class BaseModel extends PKMVCBase {
    * 'dbdefault': any MySQL default type.
    * 
    */
-  public static $sqlKeys = array('dbtype', 'key', 'ai', 'length');
+  public static $sqlKeys = array('dbtype', 'key', 'ai', 'collength',
+      'canbenull', 'default',
+      );
 
   /**
    * @var String: The default table name is the unCamelCased class name,
@@ -363,7 +365,8 @@ class BaseModel extends PKMVCBase {
    * @return array of all declared model classes
    */
   public static function getAllModels() {
-    return static::getAllDerivedClasses(BaseModel);
+    $allModels =  static::getAllDerivedClasses('PKMVC\BaseModel');
+    return $allModels;
   }
 
   /**
@@ -483,25 +486,101 @@ class BaseModel extends PKMVCBase {
    * Goes through the hierarchy of memberDirects and suggests SQL for building
    * the table.
    */
-  public static function suggestSqlArray() {
-    $sqlKeys = static::$sqlKeys;
+  public static function suggestSqlArray($alter = false) {
+    //$sqlKeys = static::$sqlKeys;
+    $sqlKeys = static::getAncestorArraysMerged('sqlKeys');
     $sqlSuggestions = array();
     $mergedMembers = static::getAncestorArraysMerged('memberDirects',true);
     foreach ($mergedMembers as $key => $value) {
       $memberDesc=array();
-      if (to_int($key) === false) {
-        $memberDesc['name'] = $key;
-        $memberDesc['type'] = 'int';
-        if ($key == 'id') {
-          $memberDesc['index'] = "'PRIMARY KEY ('id')";
+      if (to_int($key) !== false) { #$key is int index, $val is membername
+        $memberDesc['name'] = $value;
+        $memberDesc['dbtype'] = 'int';
+        if ($value == 'id') { #default, id is primary key
+          $memberDesc['key'] = "PRIMARY";
+          $memberDesc['ai'] = true;
         }
       } else {
-        $memberDesc['name'] = $key;
+        $memberDesc['name'] = $key; #$value is an assoc array:
+        foreach ($value as $vkey => $vval) {
+          if (in_array($vkey, static::$sqlKeys)) {
+            $memberDesc[$vkey] = $vval;
+          }
+        }
+      }
+      $sqlSuggestions[] = $memberDesc;
+    }
+    return $sqlSuggestions;
+  }
+
+  public static function makeSqlString($alter = false) {
+    /*
+     * 
+function getTableFields($tableName) {
+function doesTableExist($tableName) {
+     */
+    $tableFields = array();
+    $tableName = static::getTableName();
+    if (!doesTableExist($tableName)) {
+      $alter = false;
+    }
+    if ($alter) { #Make alter table SQL instead of create, if already table
+      #If table doesnt exist, have to make it. Only alter existing tables...
+      $tableFields = getTableFields($tableName);
+      $sqlStr = "ALTER TABLE `$tableName` ADD (\n";
+    } else {
+      $sqlStr = "CREATE TABLE IF NOT EXISTS `$tableName` (\n";
+    }
+    $sqlArray = static::suggestSqlArray($alter);
+    if (!sizeof($sqlArray)) {
+      return '';
+    }
+    $colStrArr = array();
+    $keyArr = array();
+    $cnt = 0;
+    foreach ($sqlArray as $sqlEl) {
+      $colStr = '';
+      if (!isset($sqlEl['name']) || in_array($sqlEl['name'], $tableFields)) {
+        continue;
+      }
+      $cnt++;
+
+      $colStr = "`".$sqlEl['name']."` ";
+      if (isset($sqlEl['dbtype'])) {
+        $colStr .= " ".$sqlEl['dbtype'];
+      } else {
+        $colStr .= " INT ";
+      }
+      if (isset($sqlEl['collength'])) {
+        $colStr .= "({$sqlEl['collength']}) ";
+      }
+      if (empty($sqlEl['canbenull'])) {
+        $colStr .= " NOT NULL ";
+      }
+      if (!empty($sqlEl['ai'])) {
+        $colStr .= " AUTO_INCREMENT ";
+      }
+      if (!empty($sqlEl['default'])) {
+        $colStr .= " DEFAULT {$sqlEl['default']} ";
       }
 
-
+      if (!empty($sqlEl['key'])) {
+        $type = ($sqlEl['key'] === true ? '': $sqlEl['key']);
+        $keyArr[].= "\n $type KEY {$sqlEl['name']} (`{$sqlEl['name']}`)";
+      }
+      $colStrArr[] = $colStr;
     }
-
+    if (!$cnt) {
+      return '';
+    }
+    $columnStrSet = implode(",\n", $colStrArr);
+    $keyStr = implode(',', $keyArr);
+    $sqlStr .= $columnStrSet;
+    if ($keyStr) {
+      $sqlStr .= ",\n $keyStr ";
+    }
+    $sqlStr .= ");\n";
+    return $sqlStr;
   }
 
   /** Returns the default value of member collections. Currently just
@@ -510,6 +589,18 @@ class BaseModel extends PKMVCBase {
   public static function getMemberObjects() {
     //return static::$memberObjects;
     return static::getAncestorArraysMerged('memberObjects');
+  }
+
+  public static function getSqlAll($alter = false) {
+
+    $strSql = '';
+    $models =  static::getAllModels();
+    foreach ($models as $model) {
+      $substr =  $model::makeSqlString($alter) . "\n\n";
+      $strSql .= $substr;
+
+    }
+    return $strSql;
   }
 
 
@@ -629,12 +720,9 @@ class BaseModel extends PKMVCBase {
    * @return String: $table_name
    */
   public static function getTableName() {
-    /*
-    if (static::$tableName) {
+    if (static::hasOwnVar('tableName')) {
       return static::$tableName;
     }
-     * 
-     */
     $baseName = static::getBaseName();
     $table_name = static::$tablePrefix.unCamelCase($baseName);
     return $table_name;
@@ -1951,6 +2039,26 @@ AND COLUMN_NAME = :field_name";
     return true;
   }
 }
+/**
+ * Get all the fields in a DB table
+ * @param string $tableName
+ * @return Array: field names
+ */
+function getTableFields($tableName) {
+  $dbName = getDatabaseName();
+  $strSql = "SELECT `column_name` FROM `information_schema`.`COLUMNS`
+    WHERE TABLE_SCHEMA = '$dbName'
+    AND TABLE_NAME = '$tableName'";
+  $stmt = prepare_and_execute($strSql);
+  $res = $stmt->fetchAll();
+  $retArr = array();
+  if (is_array($res)) {
+    foreach ($res as $re) {
+      $retArr[] = $re[0];
+    }
+  }
+  return $retArr;
+}
 
 /**
  * 
@@ -2015,6 +2123,7 @@ function objectNameToFieldId($objectName) {
  * @param type $params
  * @return FALSE if failure, or the result statement
  */
+/*
 if (!function_exists('prepare_and_execute')) {
 
   function prepare_and_execute($stmntstr, $params = null) {
@@ -2047,3 +2156,5 @@ if (!function_exists('prepare_and_execute')) {
   }
 
 }
+ * 
+ */

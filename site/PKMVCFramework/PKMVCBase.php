@@ -55,10 +55,10 @@ class PKMVCBase {
     #Now merge. Reverse order so child settings override ancestors...
     $retArr = array_reverse($retArr);
     $mgArr = call_user_func_array('array_merge',$retArr);
-    if ($idx) { #Indexed array, return only unique values. For 'memberDirects'
+    //if ($idx) { #Indexed array, return only unique values. For 'memberDirects'
       #Mainly to save the developer who respecifies 'id' in the derived direct
-      $mgArr = array_unique($mgArr);
-    }
+     // $mgArr = array_unique($mgArr);
+    //}
     return $mgArr;
   }
 
@@ -94,11 +94,16 @@ class PKMVCBase {
       $baseClass = get_class($baseClass);
     }
     $classes = get_declared_classes();
-    $interfaces = get_declared_interfaces();
-    $all = array_merge($classes, $interfaces);
+    $all = $classes;
+    //pkdebug("All Declared Classes?", $classes);
+//    $interfaces = get_declared_interfaces();
+ //   $all = array_merge($classes, $interfaces);
+      //pkdebug("BASE: [$baseClass]; All Declared All?", $all);
     $retArr = array();
+    //foreach ($all as $className) {
     foreach ($all as $className) {
-      if ($className instanceOf $baseClass) {
+      if (is_subclass_of($className, $baseClass)) {
+       // pkdebug("WOW!! We got [$className] instanceof [$baseClass]");
         $retArr[] = $className;
       }
     }
@@ -114,7 +119,7 @@ class PKMVCBase {
    */
   public static function hasOwnVar($varName) {
     $myClass = get_called_class();
-    $reflector = new ReflectionClass($myClass);
+    $reflector = new \ReflectionClass($myClass);
     $properties = $reflector->getProperties();
     foreach ($properties as $property) {
       if (($property->name==$varName) && ($property->class == $myClass)) {

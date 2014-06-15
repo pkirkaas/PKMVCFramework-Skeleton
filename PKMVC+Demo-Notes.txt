@@ -1,0 +1,16 @@
+14-Jun-14 8:57
+Forms:
+Very basic forms associated with objects sort of work. Need to do collections, etc, but also need to make forms work with straight data - not all data in an application needs to be (or can be) (or should be) an object....
+
+Also, add default values for elements? Validation whole other level...
+
+TEMPLATES:
+Allow a controller to use partial templates without requiring it's own action.
+
+
+
+
+
+
+
+

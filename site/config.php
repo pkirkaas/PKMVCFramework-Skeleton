@@ -29,6 +29,7 @@ require_once __DIR__.'/PKMVCFramework/PKMVC-config.php';
 require_once __DIR__.'/controllers/AppController.php';
 require_once __DIR__.'/controllers/IndexController.php';
 require_once __DIR__.'/controllers/UserController.php';
+require_once __DIR__.'/controllers/AdminController.php';
 require_once __DIR__.'/controllers/SystemPartialController.php';
 require_once __DIR__.'/models/DEMOORM.php';
 require_once __DIR__.'/models/User.php';

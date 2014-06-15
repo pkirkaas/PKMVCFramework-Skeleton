@@ -9,7 +9,11 @@ use PKMVC\BaseUser;
 use PKMVC\BaseModel;
 
 class User extends BaseUser {
-  protected static $memberDirects = array( 'email', 'fname', 'lname',);
+  protected static $memberDirects = array( 
+      'email'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+      'fname'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+      'lname'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+      );
   /*
   static $memberDirects = array(
       'email'=>array('dbtype'=>'varchar', 'eltype'=>'text'), 
@@ -33,8 +37,14 @@ class User extends BaseUser {
  */
 class Profile extends BaseModel {
   static $memberDirects = array(
-    'name', 'user_id', 'prof_description', 'prof_display_name', 'prof_name',
-      'aboutme', 'avatar_link', 'obf_link',
+    'name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'user_id',
+    'prof_description'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'prof_display_name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'prof_name'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'aboutme'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'avatar_link'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+    'obf_link'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
     );
   protected static $memberCollections = array(
       'profile_jobs'=>array('classname'=>'Profile', 'foreignkey'=>'user_id')); #Array of names of object collections
@@ -62,9 +72,15 @@ class Profile extends BaseModel {
 }
 
 class ProfileJob extends BaseModel{
-  protected static $memberDirects = array('id', 'prof_id', 'description',
-       'start', 'end', 'title', 'employer' ); #Array of Class attributes that map directly to table fields.
-  public $id = null;
+  protected static $memberDirects = array(
+      'profile_id' => array('key' =>true,),
+      'description'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+      'start'=> array('dbtype'=>'date',  'eltype'=>'date'),
+      'end'=> array('dbtype'=>'date',  'eltype'=>'date'),
+      'title'=> array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+      'employer' => array('dbtype'=>'varchar', 'collength'=>999, 'eltype'=>'text'),
+      
+      ); #Array of Class attributes that map directly to table fields.
   public $prof_id = null;
   public $start = null;
   public $end = null;

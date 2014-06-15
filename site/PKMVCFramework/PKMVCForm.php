@@ -342,7 +342,6 @@ class BaseForm extends BaseFormComponent {
       }
       $obj = $className::get($id);
       $obj->update($formData[$className]);
-      pkdebug("OBJ:", $obj, "FormData:", $formData);
       if ($save) {
         $obj->save();
       }
