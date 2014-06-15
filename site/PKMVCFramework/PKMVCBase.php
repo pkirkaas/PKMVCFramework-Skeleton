@@ -20,6 +20,15 @@
 namespace PKMVC;
 class PKMVCBase {
   /**
+   *
+   * @var array: All standard HTML attribute names
+   */
+  public static $globalHtmlAttributes= array (
+      'accesskey', 'class', 'contenteditable', 'contextmenu', 'dir',
+      'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck',
+     'style', 'tabindex', 'title', 'translate',
+  );
+  /**
    * Recurse up through inheretence hierarchy and merge static arrays of
    * the given arrayName name. This is for use by ::getMemberDirects(),
    * ::getMemberObjects, ::getMemberCollections()... to support deep object/class

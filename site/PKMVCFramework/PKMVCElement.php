@@ -25,6 +25,16 @@ namespace PKMVC;
  * forms, inputs, etc. Furthermore, the "Form" class includes the "subform"
  * concept, which is just a collection of input elements, without an enclosing
  * "form" tag. The BaseFormComponent is the mother to them all....
+ * 
+ * Arguments/Settings:
+ * The components have names, which are set in the $_POST array. We try to 
+ * automate/default as much as possible, while allowing for overriding/customizing
+ * defaults. 
+ * 
+ * The default approach for providing names to the elements is to provide a
+ * 'name_segment' string - not a full array/sequence. The name_segment will be
+ * added to prior name_segment components. This can be overridden by instead
+ * passing an explicit 'name' parameter, which will be used instead.
  */
 class BaseFormComponent extends PKMVCBase {
   protected static $validAttributeNames = array('autocomplete', 'novalidate',);
@@ -32,8 +42,9 @@ class BaseFormComponent extends PKMVCBase {
    * @var Array: Names of class/instance attribute/members/properties that
    * can be set by initialization
    */
-  protected static $instancePropertyNames = array('name', 'label', 'for');
-  protected static $otherAttributeNames = array();
+  protected static $instancePropertyNames = array('name', 'label', 'for',
+      'name_segment', 'name_segments');
+  protected static $otherAttributeNames = array('name_segment', 'name_segments');
   protected $attributes = array();
   protected $otherAttributes = array();
 
@@ -51,20 +62,33 @@ class BaseFormComponent extends PKMVCBase {
    * set in attrString because we will be handling them specially...
    */
   protected static $valueExclusions = array();
+  /**
+   *
+   * @var String: If set, will be the name of the control. If not set, the
+   * name will be build from ->name_segments & ->name_segment
+   */
   protected $name = '';
   protected $label = '';
   protected $for = '';
   /**
    *
    * @var Array: Form and control name segments, to be assembled into the
-   * HTML input element name. For instance, for a "User" control, the form
-   * name will be 'user', the hidden 'id' element will be id, the name segments
+   * HTML input element name, unless the "name" property is set, to override it. 
+   * 
+   * For instance, for a "User" control, the form
+   * name will be 'user', the hidden 'id' element will have the name_segment "id",
+   * the name segments
    * will be array('user','id');. If the user object has multiple profiles, say,
-   * for profile name, the nameSegments might be:
+   * for profile name, the name_segments might be:
    * array('user','profiles','','name');
    * where the empty string component would be replaced by an index count.
    */
-  protected $nameSegments = array();
+  protected $name_segments = array();
+  /**
+   *
+   * @var String: The current name segment. 
+   */
+  protected $name_segment = '';
   /**
    * @var Array: Copy of the original arguments to create or set this thing,
    * in case we want create a form instead of an element or v/v  
@@ -105,9 +129,9 @@ class BaseFormComponent extends PKMVCBase {
   }
 
   /**
-   * Slightly hackish: Set class default attributes after all other attributes
-   * applied. Has to be called at the end, so explicitly by any class who wants
-   * to use it, at the bottom of their regular "setValues" definition.
+   * Sets any default attributes for this element/form. Called first
+   * in ->setValues($args), so explicitly set in the args array, the 
+   * defaults are overridden.
    * Uses the class static attribute array:  $classDefaultAttributes
    */
   protected function setValuesDefault() {
@@ -119,11 +143,12 @@ class BaseFormComponent extends PKMVCBase {
   }
 
   /**
-   * Performs the actual datga array building/recursion
+   * Performs the actual data array building/recursion
    * TODO: Need to do somethng for collections/scrolling froms.
    * TODO!: But more important, why do we ever need this function?
    * @return array|scalar: The data array or subcomponent
    */
+  /*
   public function getValuesRecursive() {
     if ($this instanceOf BaseElement) {
       return $this->getContent();
@@ -134,6 +159,8 @@ class BaseFormComponent extends PKMVCBase {
     }
     return $retarr;
   }
+   * *
+   */
 
   /**
    * Cleans input strings for inclusion as values for HTML attributes
@@ -153,7 +180,7 @@ class BaseFormComponent extends PKMVCBase {
    */
   public static function getValidAttributeNames() {
      $bfcVA = static::getAncestorArraysMerged('validAttributeNames');
-     $validAttributeNames = array_flatten($bfcVA,MVCLib::$globalHtmlAttributes);
+     $validAttributeNames = array_flatten($bfcVA,static::$globalHtmlAttributes);
      return $validAttributeNames;
   }
 
@@ -189,11 +216,14 @@ class BaseFormComponent extends PKMVCBase {
   public function setinstanceProperties($args) {
     #Trust static instancePropertyNames...
     $iprops = static::getInstancePropertyNames();
+    $className = get_class();
+    //pkdebug("SETTING INSTANCE PROPS for class [$className], PROPS are:", $iprops, "args are:", $args);
     foreach ($args as $key => $value) {
       if (in_array($key, $iprops )) {
         $this->$key = $value;
       }
     }
+    //pkdebug("Leaving SetInstanceProperties, this is:", $this);
   }
   public function makeLabelCtl() {
     $labelCtl='';
@@ -209,14 +239,32 @@ class BaseFormComponent extends PKMVCBase {
   }
 
   /**
-   * Returns the control name, built from the nameSegments array an the current
-   * name. IF you want to override the default nameSegments, just set it to null
+   * Returns the control name, built from the name_segments array an the current
+   * name. IF you want to override the default name_segments, just set it to null
    * explicitly when creating the control/form.
    * @return String
    */
   public function getName() {
-
-
+    if ($this->name) {
+      return $this->name;
+    }
+    $name = '';
+    if ($this->name_segment) {
+      if (!sizeof($this->name_segments)) {
+        $this->name = $this->name_segment;
+        return $this->name;
+      }
+      foreach ($this->name_segments as $name_segment) {
+        if (!$name) {
+          $name = $name_segment;
+        } else {
+          $name=$name."[$name_segment]";
+        }
+        $name = $name."[{$this->name_segment}]";
+      }
+    }
+    $this->name = $name;
+    return $name;
   }
 
   /**
@@ -260,18 +308,24 @@ class BaseFormComponent extends PKMVCBase {
    * be inclduded between the open and close tags
    */
 
-  public function setValues(Array $args = array(), $exclusions = array()) {
+  public function setValues(Array $args = array(), $exclusions = array(), $useDefaults = true) {
+    if ($useDefaults) {
+      $this->setValuesDefault();
+    }
     if (!$args || !is_array($args)) {
       return $this;
     }
     $this->origArgs = $args; #Let's keep all the original args, in case...
     if (!empty($args['name_segments'])) {
-      $this->nameSegments = $args['name_segments'];
+      $this->name_segments = $args['name_segments'];
+    }
+    if (!empty($args['name_segment'])) {
+      $this->name_segment = $args['name_segment'];
     }
     if (!empty($args['name'])) {
       $this->name = $args['name'];
     }
-    $this->nameSegments[] = $this->name;
+    //$this->name_segments[] = $this->name;
 
     #Set the "normal" attribute values first
     //$this->setAttributeVals($args);
@@ -328,15 +382,24 @@ class BaseFormComponent extends PKMVCBase {
    * like: " name='aname' class='aclass' ... "
    */
   public function makeAttrStr($defaults = array(), $exclusions = array()) {
-    $attrStr = " name='{$this->name}' ";
+    $attrStr = " name='".$this->getName()."' ";
     $attributes = $this->getAttributes();
     foreach ($defaults as $key => $value) {
+      /*
+      if ($key == 'name') {
+        continue;
+      }
+       * 
+       */
       if (!in_array($key, array_keys($attributes))) {
         $attributes[$key] = $value;
       }
     }
     foreach ($attributes as $key =>$value) {
       if (!in_array($key, $exclusions)) {
+        if ($key == 'name') {
+          continue;
+        }
         $attrStr .= " $key='$value' ";
       }
     }
@@ -515,8 +578,8 @@ class BaseElement extends BaseFormComponent {
    * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
    * be inclduded between the open and close tags
    */
-  public function setValues(Array $args = array(), $exclusions = array()) {
-    parent::setValues($args);
+  public function setValues(Array $args = array(), $exclusions = array(), $useDefaults = true) {
+    parent::setValues($args, $exclusions, $useDefaults);
     if (($this->input == 'input') && !$this->type) {
       $this->type = 'text';
     }

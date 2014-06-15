@@ -1206,7 +1206,7 @@ class BaseModel extends PKMVCBase {
    * one to one with fields in the underlying table - not collections
    * or "memberObjects" -- just the integer ID keys that correspond to 
    * member Objects.
-   * @param int: Recurse into collections -- how deep? Decrements each time.
+   * @param int: Levels to recurse into collections -- how deep? Decrements each time.
    *     Still just gets db data. If -1, goes infinite. Have to worry about
    *   infinite loops, though.
    * @return Array: The array equivalent of the object data attributes

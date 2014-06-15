@@ -14,7 +14,7 @@ namespace PKMVC;
  *
  * @author Paul Kirkaas
  */
-class MVCLib {
+class MVCLib extends PKMVCBase {
   /** Returns false if false, else the string with end removed */
   public static function endsWith($str,$test) {
     if (! (substr( $str, -strlen( $test ) ) == $test) ) {
@@ -34,11 +34,6 @@ class MVCLib {
 
 
   }
-  public static $globalHtmlAttributes= array (
-      'accesskey', 'class', 'contenteditable', 'contextmenu', 'dir',
-      'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck',
-     'style', 'tabindex', 'title', 'translate',
-  );
 
   /**
    * Merges all input arrays, with each other and with
@@ -51,7 +46,8 @@ class MVCLib {
    * 
    * @return boolean: Is the attribute acceptable in the context?
    */
-  public static function isValidAttribute($attr /*Array|String $arg1, ...*/) {
+  /*
+  public static function isValidAttribute($attr ) {
     $args = func_get_args();
     array_shift($args);
     $validAttributes = array_flatten($args,static::$globalHtmlAttributes);
@@ -63,6 +59,7 @@ class MVCLib {
     }
     return false;
   }
+  */
 
   /** So ready for 5.4 and traits, but until then ... common function, but
    * the static arrays must be declared public to be accessable from here,

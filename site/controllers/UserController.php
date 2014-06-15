@@ -128,13 +128,34 @@ class UserController extends AppController {
     $user = $this->processPost($user);
     //$user = $this->processPost($user, $form);
     $formElements = array(
+        /*
+         * #with EXPLICIT 'name' values. Try with name segments...
         'uname'=>array('label'=>'User Name', 'name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
         'email'=>array('label'=>'Email?', 'name'=>'user[email]', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
+        'fname'=>array('label'=>'First Name', 'name'=>'user[fname]', 'placeholder'=>'Your First Name', 'value'=>$user->getFname()),
+        'lname'=>array('label'=>'Last Name', 'name'=>'user[lname]', 'placeholder'=>'Your Last Name', 'value'=>$user->getLname()),
+        #'profile_description'=>array('label'=>'Description?', 'name'=>'user[profile_description]', 'placeholder'=>'Describe Your Profile', 'value'=>$user->getProfileDescription()),
+        #'aboutme'=>array('label'=>'About me....', 'name'=>'user[aboutme]', 'placeholder'=>'Describe Yourself', 'value'=>$user->getAboutme()),
         'profiles'=>array('type'=>'subform','scrolling'>true,'name'=>'user[profiles]', 'items'=>$user->getProfiles()),
         'submit'=>array('type'=>'submit', 'name'=>'user[submit]', 'class'=>'input submit',
             'value'=>"Submit To Me!"),
+         * *
+         */
+        'uname'=>array('label'=>'User Name', 'name_segment'=>'uname', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
+        'email'=>array('label'=>'Email?', 'name_segment'=>'email', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
+        'fname'=>array('label'=>'First Name', 'name_segment'=>'fname', 'placeholder'=>'Your First Name', 'value'=>$user->getFname()),
+        'lname'=>array('label'=>'Last Name', 'name_segment'=>'lname', 'placeholder'=>'Your Last Name', 'value'=>$user->getLname()),
+        #'profile_description'=>array('label'=>'Description?', 'name'=>'user[profile_description]', 'placeholder'=>'Describe Your Profile', 'value'=>$user->getProfileDescription()),
+        #'aboutme'=>array('label'=>'About me....', 'name'=>'user[aboutme]', 'placeholder'=>'Describe Yourself', 'value'=>$user->getAboutme()),
+
+        'profiles'=>array('subform'=>'profiles','scrolling'=>true,'name_segment'=>'profiles', 'class'=> 'doggy', 'items'=>$user->getProfiles()),
+            'elements'=>
+                array('profile_description'=>array('name_segment'=>'profile_description', 'placeholder'=>"Describe your profile", )),
+
+        'submit'=>array('type'=>'submit', 'name_segment'=>'submit', 'class'=>'input submit',
+            'value'=>"Submit To Me!"),
         );
-    $formArgs = array('base_object'=>$user, 'elements'=>$formElements, 'name'=>'user');
+    $formArgs = array('base_object'=>$user, 'elements'=>$formElements, 'name_segment'=>'user');
     //$form->addElement($formElements);
     $form = new BaseForm($formArgs);
     //$user = $this->processPost($user, $form);
