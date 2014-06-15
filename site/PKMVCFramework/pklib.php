@@ -451,3 +451,13 @@ function array_flatten(/*$args*/) {
   array_walk_recursive($args, function($a) use (&$return) { $return[] = $a; });
   return $return;
 }
+
+/**
+ * Converts a compatable argument to an actual integer type ('7' -> 7), or 
+ * boolean false ('010' -> false, '' -> false).
+ * Totally unnecessary function but more convenient than remembering constant 
+ * @param type $arg
+ */
+function to_int ($arg) {
+ return filter_var($arg, FILTER_VALIDATE_INT);
+}

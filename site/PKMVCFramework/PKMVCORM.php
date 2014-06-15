@@ -108,6 +108,28 @@ class BaseModel extends PKMVCBase {
       #'id'=>array('dbtype'=>'int', 'dbindex'=>'primary', 'eltype'=>'hidden')); 
 
 
+  /**
+   * @var Array of $memberDirect keys used to build the create table SQL, if
+   * some $memberDirect elements are implemented as 'memberName'=>array(...)
+   * 'key': PRIMARY, UNIQUE, or true. Default: none
+   * 'dbtype': Any SQL type; default: INT
+   * 'ai': true. Default: false
+   * 'canbenull': true/false: default: true;
+   * 'dbdefault': any MySQL default type.
+   * 
+   */
+  public static $sqlKeys = array('dbtype', 'key', 'ai', 'length');
+
+  /**
+   * @var String: The default table name is the unCamelCased class name,
+   * but can be specified. IF DEPENDING ON TABLENAME OR TABLEPREFIX, MUST
+   * SET THEM AS PART OF CONFIGURATION, NOT ON CONSTRUCT, SINCE MANY BaseModel
+   * STATIC FUNCTIONS REFERENCE THEM!
+   */
+  public static $tableName = null;
+
+  public static $tablePrefix = null;
+
   /** Every class that uses this object model will have a primary key "id":
    */
   protected $id;
@@ -258,7 +280,7 @@ class BaseModel extends PKMVCBase {
 
     #Step through input array and set/update
     #First, direct fields
-    $directFields = $this->getDirectFields();
+    $directFields = $this->getMemberDirectNames();
     foreach ($directFields as $directField) {
       $table_field = unCamelCase($directField);
       if (isset($arr[$table_field])) {
@@ -338,6 +360,13 @@ class BaseModel extends PKMVCBase {
   }
 
   /**
+   * @return array of all declared model classes
+   */
+  public static function getAllModels() {
+    return static::getAllDerivedClasses(BaseModel);
+  }
+
+  /**
    * Returns all the collections of this object, or just the named collection
    * @param null|String $collectionName
    * @return Array: Associative array of collectionNames => indexed array of
@@ -413,22 +442,66 @@ class BaseModel extends PKMVCBase {
   /** Returns the member directs. Merges the heirarch
    * 
    */
+  /*
   public static function getMemberDirects() {
     return static::getAncestorArraysMerged('memberDirects',true);
   }
+   * 
+   */
 
   /** Returns what was the original memberDirects structure, which is just
    * an indexed array of direct member names, from array_keys
+   * NEW: Supports mixed indexed array of names, as well as associative
+   * $memberName => array(member properties). See notes
    * TODO: Figure out if we are going to use indirect member direct keys or what
    * @return Array of direct member names
    */
   public static function getMemberDirectNames() {
-    return static::getAncestorArraysMerged('memberDirects',true);
+    $mergedMembers = static::getAncestorArraysMerged('memberDirects',true);
+    #Mixed direct names and key/value properties:
+    $memberNames = array();
+    foreach ($mergedMembers as $key => $value) {
+      if (to_int($key) === false) {
+        $memberName = $key;
+      } else {
+        $memberName = $value;
+      }
+      if (!is_string($memberName) || !strlen($memberName)) {
+        throw new \Exception("Bad Member name: [".print_r($memberName,true).']');
+      }
+      $memberNames[]=$memberName;
+    }
+    return $memberNames;
     /*
     $memberDirectArrays = static::getMemberMerged('memberDirects',true);
     $memberDirectNames = array_keys($memberDirectArrays);
     return $memberDirectNames;
     */
+  }
+
+  /**
+   * Goes through the hierarchy of memberDirects and suggests SQL for building
+   * the table.
+   */
+  public static function suggestSqlArray() {
+    $sqlKeys = static::$sqlKeys;
+    $sqlSuggestions = array();
+    $mergedMembers = static::getAncestorArraysMerged('memberDirects',true);
+    foreach ($mergedMembers as $key => $value) {
+      $memberDesc=array();
+      if (to_int($key) === false) {
+        $memberDesc['name'] = $key;
+        $memberDesc['type'] = 'int';
+        if ($key == 'id') {
+          $memberDesc['index'] = "'PRIMARY KEY ('id')";
+        }
+      } else {
+        $memberDesc['name'] = $key;
+      }
+
+
+    }
+
   }
 
   /** Returns the default value of member collections. Currently just
@@ -540,25 +613,30 @@ class BaseModel extends PKMVCBase {
    * those that map directly to fields in the underlying table.
    * Currently just the ::$memberDirects array.
    */
+  /*
   public static function getDirectFields() {
-    return static::getMemberDirects();
+    return static::getMemberDirectNames();
     #return static::$memberDirects;
 #(Restore if use memberDirects to hold additional info?)
     //return static::getMemberDirectNames();
   }
+   */
 
-  /** Just returns the default name of the underlying table based
-   * on the convention of class / object naming.
+  /** Just returns the default name of the underlying table based on:
+   * 1) The table name defined as a static class var.
+   * 2) The convention of class / object naming, prepended with table prefix
+   * 3) The convention of class / object naming, 
    * @return String: $table_name
    */
   public static function getTableName() {
-    global $nc_config;
-    $table_prefix = '';
-    if (!empty($nc_config['table_prefix'])) {
-      $table_prefix = $nc_config['table_prefix'];
+    /*
+    if (static::$tableName) {
+      return static::$tableName;
     }
+     * 
+     */
     $baseName = static::getBaseName();
-    $table_name = $table_prefix.unCamelCase($baseName);
+    $table_name = static::$tablePrefix.unCamelCase($baseName);
     return $table_name;
   }
 
@@ -793,6 +871,15 @@ class BaseModel extends PKMVCBase {
    * or initializing array of data, which we initialize the new object with
    */
   protected function __construct($arg = null) {
+    #First set table name, if not using convention
+    if (is_array($arg)) {
+      if (isset($arg['table_name'])) {
+        static::$tableName = $arg['table_name'];
+      } else if (isset($arg['table_prefix'])) {
+        static::$tablePrefix = $arg['table_prefix'];
+      }
+    }
+    static::setTableName();
     $class = get_class($this);
     if (empty($arg)) { #A new object.
       return;
@@ -949,7 +1036,7 @@ class BaseModel extends PKMVCBase {
     //return $this->update($data,true, $recursive);
 
     $this->makeDirty();
-    $directFields = static::getDirectFields();
+    $directFields = static::getMemberDirectNames();
     foreach ($directFields as $directField) {
       $direct_field = unCamelCase($directField);
       if (isset($data[$direct_field])) {
@@ -1047,7 +1134,7 @@ class BaseModel extends PKMVCBase {
   public function getArrayCopyRecursive($recurse = 0) {
     $this->traversed = true;
     $retarr = array();
-    $directFields = static::getDirectFields();
+    $directFields = static::getMemberDirectNames();
     foreach ($directFields as $directField) {
       $direct_field = unCamelCase($directField);
       $retarr[$direct_field] = $this->$directField;
@@ -1191,7 +1278,7 @@ class BaseModel extends PKMVCBase {
     $className = get_class($this);
     $memberCollections = static::getMemberCollections();
     //if (in_array($name, static::getMemberDirectNames())) { //it's a member direct'
-    if (in_array($name, static::getMemberDirects())) { //it's a member direct'
+    if (in_array($name, static::getMemberDirectNames())) { //it's a member direct'
       return $this->$name;
     }
     if (in_array($name, array_keys(static::getMemberObjects()))) { //it's a member object'
@@ -1223,7 +1310,7 @@ class BaseModel extends PKMVCBase {
    * @return Array: Of Key=>Value pairs
    */
   public function getDirectVars() {
-    $directProperties = static::getDirectFields();
+    $directProperties = static::getMemberDirectNames();
     $objVars = $this->getVars();
     $ret = array();
     foreach ($objVars as $key => $value) {
@@ -1399,7 +1486,7 @@ class BaseModel extends PKMVCBase {
    /*
   public function populateFromArray($arr, $recursive = true, $exclude = array()) {
     $this->makeDirty();
-    $directFields = static::getDirectFields();
+    $directFields = static::getMemberDirectNames();
     $colls = static::$memberCollections;
     foreach ($arr as $key => $val) {
       #Skip fields to exlcude
@@ -1519,6 +1606,16 @@ class BaseModel extends PKMVCBase {
     return $namespace;
   }
 
+  /**
+   * Returns what would be the default table name by convention
+   * @param String|Class|Instance|Null - the default table name
+   * for the current class if parameter null, else for the parameter class
+   * @return String: default table name based on class name
+   */
+  public static function getDefaultTableName($class = null) {
+    return unCamelCase(static::getBaseName($class));
+  }
+
   public static function getBaseName($class = null) {
     if (!$class) {
       $className = get_called_class();
@@ -1532,6 +1629,26 @@ class BaseModel extends PKMVCBase {
       return $className;
     }
     return substr(strrchr($className, "\\"), 1);
+  }
+
+  /**
+   * Sets the table name for this class - first, if the $tableName argument
+   * is set, if not, then if the tablePrefix static class property is set
+   * it is prepended to the default table name derived from the class name
+   * TODO: Doesn't work unless each subclass declares it's own static::$tableName,
+   * just uses the ancestor and sets for everyone else. Figure out something
+   * clever -- maybe just use if defined for that class?
+   * @param type $tableName
+   * @return type
+   */
+  public static function setTableName($tableName = null) {
+    if ($tableName) {
+      static::$tableName = $tableName;
+      return;
+    }
+    if (!static::$tableName && static::$tablePrefix) {
+      static::$tableName = static::$tablePrefix.static::getDefaultTableName();
+    } 
   }
 
 #Close Class Brace

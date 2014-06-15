@@ -61,4 +61,66 @@ class PKMVCBase {
     }
     return $mgArr;
   }
+
+  /** Like merging arrays, above, but makes an array from scalar values
+   * 
+   * @param type $propertyName
+   * @param type $idx
+   * @return Associate Array of classNames as keys to the property value;
+   */
+  protected static function getAncestorPropertiesMerged($propertyName) {
+     #First, build array of arrays....
+     $retArr = array();
+     $class = get_called_class();
+     $retArr[$class]=$class::$$propertyName; #Deliberate double $$
+     while ($par = get_parent_class($class)) {
+       if(! property_exists($par, $propertyName)) {
+         break;
+       }
+      $retArr[$par]=$par::$$propertyName;
+      $class=$par;
+    }
+    return $retArr;
+  }
+
+  /**
+   * Returns an array of all declared classes derived from the base class
+   * Of course, doesn't find autoload classes that haven't been loaded yet...
+   * @param String|Class|Object $baseClass: class name, interface, or instance
+   */
+  public static function getAllDerivedClasses ($baseClass) {
+    #Get the class name if $baseClass an instance instead of a class name
+    if (is_object($baseClass)) {
+      $baseClass = get_class($baseClass);
+    }
+    $classes = get_declared_classes();
+    $interfaces = get_declared_interfaces();
+    $all = array_merge($classes, $interfaces);
+    $retArr = array();
+    foreach ($all as $className) {
+      if ($className instanceOf $baseClass) {
+        $retArr[] = $className;
+      }
+    }
+    return $retArr;
+  }
+
+  /**
+   * Checks if this static variable name is defined/declared
+   * IN THIS CLASS! Not if inhereted...
+   * Works for both private & static vars
+   * @param String $varName: Name of the static var
+   * @return boolean: 
+   */
+  public static function hasOwnVar($varName) {
+    $myClass = get_called_class();
+    $reflector = new ReflectionClass($myClass);
+    $properties = $reflector->getProperties();
+    foreach ($properties as $property) {
+      if (($property->name==$varName) && ($property->class == $myClass)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
