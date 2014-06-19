@@ -35,8 +35,6 @@ class UserController extends AppController {
    * processes the form after submission
    */
   public function registerAction() {
-    error_log("Trying to register");
-    pkdebug("Trying to register");
     $form = new BaseForm();
 
     if (($_SERVER['REQUEST_METHOD'] == 'POST')) { //Save -- form submitted
@@ -148,9 +146,11 @@ class UserController extends AppController {
         #'profile_description'=>array('label'=>'Description?', 'name'=>'user[profile_description]', 'placeholder'=>'Describe Your Profile', 'value'=>$user->getProfileDescription()),
         #'aboutme'=>array('label'=>'About me....', 'name'=>'user[aboutme]', 'placeholder'=>'Describe Yourself', 'value'=>$user->getAboutme()),
 
-        'profiles'=>array('subform'=>'profiles','scrolling'=>true,'name_segment'=>'profiles', 'class'=> 'doggy', 'items'=>$user->getProfiles()),
+        #'profiles'=>array('subform'=>'profiles','scrolling'=>true,'name_segment'=>'profiles', 'class'=> 'doggy', 'items'=>$user->getProfiles()),
+        'profiles'=>array('subform'=>'profiles','name_segment'=>'profiles', 'class'=> 'doggy'),
             'elements'=>
-                array('profile_description'=>array('name_segment'=>'profile_description', 'placeholder'=>"Describe your profile", )),
+                array('profile_description'=>array('name_segment'=>'profile_description', 'data-stuff'=>'fromUserController', 'placeholder'=>"Describe your profile", )),
+                array('profile_blah'=>array('type'=>'hidden', 'name_segment'=>'blah', 'data-stuff'=>'fromUserController', 'placeholder'=>"Describe your profile", )),
 
         'submit'=>array('type'=>'submit', 'name_segment'=>'submit', 'class'=>'input submit',
             'value'=>"Submit To Me!"),

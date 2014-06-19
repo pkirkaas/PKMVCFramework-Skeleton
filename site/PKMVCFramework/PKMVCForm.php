@@ -179,7 +179,7 @@ class BaseForm extends BaseFormComponent {
    * outputs the raw HTML as content - so you can add HTML like div's and
    * other content as elements, and maybe skip the need for a form template
    */
-  protected $elements = array();
+  protected $elements = '';
 
   /** The $formData should be a clean array of data, with relevant
    * class names as the array keys to the data
@@ -276,31 +276,46 @@ class BaseForm extends BaseFormComponent {
    * an element instance or an array that can be used to create the element
    * @return \PKMVC\BaseForm
    */
-  public function setValues(Array $attributes = array(), $exclusions = array(), $useDefaults = true) {
-    if (isset($attributes['subform'])) {
+  public function setValues(Array $args = array(), $exclusions = array(), $useDefaults = true) {
+    static $count = 0;
+    if (isset($args['subform'])) {
       $useDefaults = false;
     }
-    parent::setValues($attributes, $exclusions, $useDefaults); #Takes care of the regular attributes
+    parent::setValues($args, $exclusions, $useDefaults); #Takes care of the regular attributes
     #Set elements if present....
-    if (isset($attributes['elements'])) {
-      $this->addElement($attributes['elements']);
-      $elements = $attributes['elements']; 
-      foreach ($elements as $key => $value) { 
-        if ($key == 'name') {
+    if (isset($args['elements'])) {
+      $elements = $args['elements'];
+      pkdebug("this->namesegment: ". $this->name_segment, "SEGMENTS?", $this->name_segments);
+      $name_segments = $this->name_segments;
+      $name_segments[] = $this->name_segment;
+      foreach ($elements as &$element) {
+        $element['name_segments'] = $name_segments;
+      }
+      $this->addElement($args['elements']);
 
-        } else if ($value instanceOf BaseFormComponent) {
-          $this->elements[$key] = $value;
-        } else if (is_array($value)) {
+
+
+      /*
+      $elements = $args['elements']; 
+      foreach ($elements as $key => $value) { 
+        #if ($key == 'name') {
+        #} else 
+        #if ($value instanceOf BaseFormComponent) {
+        #  $this->elements[$key] = $value;
+        #} else 
+         if (is_array($value)) {
           $name_segments = $this->name_segments;
           $name_segments[] = $this->name_segment;
           $value['name_segments'] = $name_segments;
           if (isset($value['subform'])) {#Making a subform
             if (is_string($value['subform'])) {#A collection property
               $collectionName = $value['subform'];
-              $obj = $attributes['base_object'];
+              $obj = $args['base_object'];
               $objMemberCollections = $obj->getMemberCollections();
               $collectionAttr = $objMemberCollections[$collectionName];
               $value['name_segment'] = $collectionName;
+
+              $value['name_segments'][] = $this->name_segment;
               $value['elements'][]=array('type'=>'hidden',
                   'name_segment'=>$collectionAttr['foreignkey'],
                   'base_class'=>$collectionAttr['classname'],
@@ -321,6 +336,25 @@ class BaseForm extends BaseFormComponent {
           throw new \Exception("Invalid el type: [$elType] for key: [$key]'");
         }
       }
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
     return $this;
   }
@@ -340,27 +374,25 @@ class BaseForm extends BaseFormComponent {
    * @return null;
    */
   public function __construct($args = array()) { //, $subform = false) {
-    if (!empty($args['subform'])) {
-      $this->subform = $args['subform'];
-      pkdebug("Building a subform with args:", $args);
-    }
-
     $this->elements = new PartialSet();
+    parent::__construct($args);
     if (!$args) {
-      $this->setValuesDefault();
       return;
     }
+    if (!empty($args['subform'])) {
+      $this->subform = $args['subform'];
+      //pkdebug("Building a subform with args:", $args);
+      //pkstack(2);
+    }
+
+    /*
     if ($args instanceOf BaseModel) {
       $this->base_object = $args;
       $name = $args->getBaseName();
-
       $this->setValuesDefault();
       return;
     }
-    if (is_array($args) ) {
-      $this->setValues($args);
-    }
-    
+     */
     #Set defaults if not set -- id field and submit button
     if (!$this->subform) {
       $idEl = $this->getElement('id');
@@ -374,6 +406,7 @@ class BaseForm extends BaseFormComponent {
           $id = $this->base_object->getId();
         }
         $idEl = new BaseElement(array(
+          'data-here'=>'auto-id', 
           'type'=>'hidden',
           'name'=>unCamelCase($className)."[id]", 'value'=>$id
         ));
@@ -432,21 +465,7 @@ class BaseForm extends BaseFormComponent {
    * 
    * @return string:  HTML  form close tag, and submit button...
    */
-  public function closeForm() {
-    $close =  "\n</form>\n";
-    /*
-    $submitEl = $this->getElement('submit');
-    if ($submitEl === false) { #Not set; not even to null! So create default
-      $submitEl = new BaseElement(array('submit'=>
-          array('type'=>'submit', 'name'=>'submit', 'value'=>'Submit')));
-    }
-      if ($submitEl) { #submitEl 
-        $close = "\n".$submitEl.$close;
-    }
-     * 
-     */
-    return $close;
-  }
+  public function closeForm() { return "\n</form>\n"; }
 
 
 
@@ -509,24 +528,40 @@ class BaseForm extends BaseFormComponent {
       if ($sval instanceOf BaseFormComponent) {#Is already el or subform...
         $this->elements[$skey] = $sval;
       } else if (is_array($sval)) { #Make element or subform from data array
+      /*
         if (!isset($val['name_segments'])) {
           $val['name_segments'] = $this->name_segments;
+        } else {
+          $this->name_segments = $val['name_segments'];
         }
-        if (isset($sval['subform'])) {
-          $name_segments = $this->name_segments;
-          $name_segments[]=$this->name_segment;
-          $sval['name_segments'] = $name_segments;
+       * */
+        /*
+        $val['name_segments'][]=$this->name_segment;
+        if (!isset($val['name'])) {
+          $val['name'] = $this->getName()."[{$this->name_segment}]";
+        }
+         * 
+         */
+        $name_segments = $this->name_segments;
+        //$name_segments[]=$this->name_segment;
+        if (isset($sval['subform'])) { #Making a subform...
+          #$sval['name_segments'] = $this->name_segments;
+          #$sval['name_segment'] = $this->name_segment;
+
           if (empty($sval['class'])) {
              $sval['class'] = ' ';
           }
           $sval['class'] .= ' '.$sval['subform'];
-          pkdebug("Trying to make a subform? With sval:", $sval);
+          //pkdebug("Trying to make a subform? With sval:", $sval);
           if (isset($sval['scrolling'])) {
             $this->elements[$skey] = new FormSet($sval);
           } else {
             $this->elements[$skey] = new BaseForm($sval);
           }
         } else {
+          
+          $name_segments[] = $this->name_segment;
+          $sval['name_segments'] = $name_segments;
           $this->elements[$skey] = new BaseElement($sval);
         }
       } else { #Bad element value 
@@ -589,8 +624,7 @@ class BaseForm extends BaseFormComponent {
   public function __toString() {
     #About to display, NOW we set values...
     if (isset($this->base_object)) {#Iterate props and set element vals
-      $this->bind();
-
+      //$this->bind();
     }
     if ($this->getRenderResult()) {
       return $this->renderResult->__toString();
@@ -764,6 +798,7 @@ class FormSet extends BaseForm {
   protected static $otherAttributeNames = array('base_form', 'objs', 'data');
 
   public function __construct($args = null) {
+    //pkdebug("Making a collection/FormSet, with args:", $args);
     $this->scrolling = true;
     $this->forms = new PartialSet();
     parent::__construct($args);

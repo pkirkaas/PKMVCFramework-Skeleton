@@ -76,8 +76,6 @@ Abstract Class BaseUser extends BaseModel {
    */
 
   public static function register($idvalue, $cpassword=null, $optargs = array()) {
-    error_log("Trying to register");
-    pkdebug("Trying to register");
     $directs = static::getMemberDirectNames();
     $class = get_called_class();
     $user = static::get();
@@ -160,11 +158,9 @@ Abstract Class BaseUser extends BaseModel {
     $storedPassword = $tstUser->getPassword();
 
     if (!($tstPassword === $tstUser->getPassword())) { #no match
-      echo "<h2>Passwords didn't match: input cpassword: [$cpassword], tstPwd: [$tstPassword]; retrieved enc pwd: [$storedPassword]</h2>"; 
       return "Passwords didn't match!";
     }
     #We're good? Persist and return
-    echo "<h2>Passwords DID match: input cpassword: [$cpassword], tstPwd: [$tstPassword]; retrieved enc pwd: [$storedPassword]</h2>"; 
     $user = $tstUser;
     $id = $user->getId();
     Application::setSessionVal('userId', $id);

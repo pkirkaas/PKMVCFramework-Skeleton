@@ -42,8 +42,8 @@ class BaseFormComponent extends PKMVCBase {
    * @var Array: Names of class/instance attribute/members/properties that
    * can be set by initialization
    */
-  protected static $instancePropertyNames = array('name', 'label', 'for',
-      'name_segment', 'name_segments');
+  protected static $instancePropertyNames = array('name', 'label', 'for',);
+      //'name_segment', 'name_segments');
   protected static $otherAttributeNames = array('name_segment', 'name_segments');
   protected $attributes = array();
   protected $otherAttributes = array();
@@ -107,6 +107,15 @@ class BaseFormComponent extends PKMVCBase {
    * @var Boolean 
    */
   protected $is_template = false;
+  public function __construct($args = null ) {
+    $class = get_class($this);
+    pkdebug("CONSTRUCT FOR CLASS [$class]; args:", $args);
+    //parent::__construct($args);
+    $this->setValuesDefault();
+
+    #set some defaults, then call set Values with rest
+    $this->setValues($args);
+  }
 
   /**
    * Has to also figure out whether to set the $this->attributes['value'] or
@@ -245,13 +254,16 @@ class BaseFormComponent extends PKMVCBase {
    * @return String
    */
   public function getName() {
+    $class=get_class($this);
     if ($this->name) {
+      pkdebug("CLASS[$class]Returning just this->name: ".$this->name);
       return $this->name;
     }
     $name = '';
     if ($this->name_segment) {
       if (!sizeof($this->name_segments)) {
         $this->name = $this->name_segment;
+      pkdebug("CLASS[$class]No 'segments'; Returning just this->segment_name: ".$this->name);
         return $this->name;
       }
       foreach ($this->name_segments as $name_segment) {
@@ -260,10 +272,11 @@ class BaseFormComponent extends PKMVCBase {
         } else {
           $name=$name."[$name_segment]";
         }
-        $name = $name."[{$this->name_segment}]";
       }
+      $name = $name."[{$this->name_segment}]";
     }
     $this->name = $name;
+    pkdebug("CLASS[$class] There WERE segments:", $this->name_segments," Returning just this->segment_name: ".$this->name);
     return $name;
   }
 
@@ -322,6 +335,9 @@ class BaseFormComponent extends PKMVCBase {
     if (!empty($args['name_segment'])) {
       $this->name_segment = $args['name_segment'];
     }
+    /*
+     * 
+     */
     if (!empty($args['name'])) {
       $this->name = $args['name'];
     }
@@ -382,6 +398,9 @@ class BaseFormComponent extends PKMVCBase {
    * like: " name='aname' class='aclass' ... "
    */
   public function makeAttrStr($defaults = array(), $exclusions = array()) {
+    //pkdebug ("This Element:", $this);
+
+    //$attrStr = " name='".$this->getName()."' ";
     $attrStr = " name='".$this->getName()."' ";
     $attributes = $this->getAttributes();
     foreach ($defaults as $key => $value) {
@@ -566,9 +585,7 @@ class BaseElement extends BaseFormComponent {
    * See doc for buildHtml() below for details
    */
   public function __construct($args = array()) {
-
-    #set some defaults, then call set Values with rest
-    $this->setValues($args);
+    parent::__construct($args);
   }
 
   /** Sets values for this element

@@ -28,6 +28,12 @@ class PKMVCBase {
       'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck',
      'style', 'tabindex', 'title', 'translate',
   );
+
+  /*
+  public function __construct($args=null) {
+  }
+   * 
+   */
   /**
    * Recurse up through inheretence hierarchy and merge static arrays of
    * the given arrayName name. This is for use by ::getMemberDirects(),
