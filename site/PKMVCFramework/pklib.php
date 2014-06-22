@@ -461,3 +461,94 @@ function array_flatten(/*$args*/) {
 function to_int ($arg) {
  return filter_var($arg, FILTER_VALIDATE_INT);
 }
+
+/**
+ * Cleans a string for output. Basically, wrap all output in this function, then
+ * can change method used.
+ * @param string $str: The string to clean
+ * @return string: The clean string.
+ */
+function cln_str($str, $filter = FILTER_SANITIZE_STRING) {
+  return filter_var($str, $filter);
+}
+
+
+
+function cln_arr_val(Array $arr, $key, $filter = FILTER_SANITIZE_STRING) {
+  if (!array_key_exists($key, $arr)) {
+    return null;
+  }
+  return cln_str($arr[$key], $filter);
+}
+
+/**
+ * Encodes a string with HTML special characters -- including single and double
+ * quotes - mainly for use to include an aritrary string (including HTML
+ * input elements for form templates) in an HTML data-XXX attribute.
+ * IDEMPOTENT!!
+ * @param String $str: The input string, which may contain special HTML chars.
+ * @return String: The HTML Encoded string
+ */
+function html_encode ($str) {
+  return filter_var($str, FILTER_SANITIZE_FULL_SPECIAL_CHARS, ENT_QUOTES);
+}
+
+/**
+ * Decodes a string previously encoded for HTML special characters --
+ * including single and double quotes - mainly for use decoding an HTML data-XXX attribute.
+ * @param String $str: The input string, which may contain special HTML chars.
+ * @return String: The HTML Encoded string
+ */
+function html_decode($str) {
+   htmlspecialchars_decode($str, ENT_QUOTES);
+}
+
+/**
+ * Insert the value into the given array (or new array) at the appropriate
+ * depth/key sequence specified by the array of keys. Ex: 
+ * var_dump(insert_into_array(array('car','ford','mustang','engine'), "351 Cleavland"));
+ * Outputs:
+ * array (size=1)
+  'car' => 
+    array (size=1)
+      'ford' => 
+        array (size=1)
+          'mustang' => 
+            array (size=1)
+              'engine' => string '351 Cleavland' (length=13)
+ * @param array $keys: Sequence/depth of keys
+ * @param Mixed $value: Whatever value to assign to the location
+ * @param array|NULL $arr -- Optional array to add to or create 
+ * @return Array: Array with value set at appropriate vector. If called with
+ * $retar = &insert_into_array(.... $arr);, $retar will be a reference to $arr
+ */
+function &insert_into_array( $keys, $value,& $arr = null) {
+  if ($arr === null) {
+    $arr = array();
+  }
+  $x = & $arr;
+  foreach ($keys as $keyval) {
+    $x = & $x[$keyval];
+  }
+  $x = $value;
+  return $arr;
+}
+
+
+/**
+ * Examines an array and checks if a key sequence exists
+ * @param array $keys: Array of key sequence, like
+ * array('car','ford','mustang','engine')
+ * @param array $arr: The array to examine if key sequence is set, for ex:
+ * $arr['car']['ford']['mustang']['engine'] = "351 Cleavland";
+ * @return boolean: True if array key chain is set, else false
+ */
+//function array_key_exists_depth(Array $keys, Array $arr) {
+function array_keys_exist(Array $keys, Array $arr) {
+  foreach ($keys as $keyval) {
+    if (!is_array($arr) || ! array_key_exists($keyval, $arr)) {
+      return false;
+    }
+  }
+  return true;
+}

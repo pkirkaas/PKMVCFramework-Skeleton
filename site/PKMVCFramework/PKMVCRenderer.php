@@ -339,6 +339,14 @@ class PartialSet extends \ArrayObject {
     }
     return $str;
   }
+
+  /** Deep object copy. Can do something more clever with __clone() at some
+   * point, but for now...
+   * @return static: (that is, static in the sense of current class): copy of $this
+   */
+  public function copy() {
+    return unserialize(serialize($this));
+  }
 }
 
   

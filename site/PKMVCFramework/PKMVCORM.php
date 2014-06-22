@@ -7,6 +7,7 @@ use \PDOStatement;
 use \Exception;
 use \ReflectionProperty;
 use \ReflectionClass;
+use \ArrayAccess;
 
 /**
  * PKMVC Framework 
@@ -60,7 +61,7 @@ use \ReflectionClass;
  * are currently public to use a common function across classes, but should
  * be reverted to protected when switch over to traits...
  */
-class BaseModel extends PKMVCBase {
+class BaseModel extends PKMVCBase  implements ArrayAccess {
 
   /**
    * Array of names of member objects mapped to the foreign Class they represent.
@@ -1744,6 +1745,75 @@ class BaseModel extends PKMVCBase {
       static::$tableName = static::$tablePrefix.static::getDefaultTableName();
     } 
   }
+
+  #ArrayAccess implementation -- incomplete - only get; but multi-dimensional
+
+  public function setData($data = array() ) {
+//    $this->container = $data;
+  }
+
+  public function offsetExists ( $offset ) {
+    return true;
+  }
+  public function &offsetGet ($offset) {
+   // echo "<h4>Start: OFFSET_get:</h4>";
+    //var_dump( $offset);
+    //echo "<h4>END: OFFSET_get:</h4>";
+    //$b['ab'] = "Indirect Offset";
+    //return "The Resultant Offset";
+    //$b = & $this->container;
+    /*
+    if (array_key_exists($offset,$this->container)) {
+      $res = $this->container[$offset];
+      if (is_array($res)) {
+        return new static($res);
+      } else {
+        return $res;
+      }
+    } else {
+    return null;
+    }
+     * 
+     */
+    #First, check if it is a direct member variable, if so, return the value
+    $directVars = $this->getDirectVars();  
+    if (in_array($offset, array_keys($directVars))) {
+      return $directVars[$offset];
+    }
+    #Check if a "member object"; if so, instantiate it and return it...
+    if (in_array($offset, array_keys(static::getMemberObjects()))) { //it's a member object'
+      return $this->{"get$offset"}();
+    }
+    if (in_array($offset, array_keys(static::getMemberCollections()))) { //it's a member object'
+      return $this->{"get$offset"}();
+    }
+  }
+
+  /**
+   * To support ArrayAccess functions to access this BaseModel object with 
+   * array dereferencing. Return an array of valid keys as keys, mapped to
+   * arrays of the key characteristics to retrieve the value
+   */
+  public function getKeys() {
+
+
+  }
+
+  public function offsetSet ($offset , $value ) {
+  //  echo "<h4>Start: OFFSET_SET:</h4>";
+  //  var_dump($offset, $value);
+   // echo "<h4>END: OFFSET_SET:</h4>";
+    //$this->container[$offset] = $value;
+  }
+  public function offsetUnset ($offset) {
+  }
+
+
+
+
+
+
+
 
 #Close Class Brace
 }

@@ -105,7 +105,7 @@ class BaseController {
    * @param array $keys: An indexed array of key names, to arbitrary depth, used
    * to index the array of slots. Like, array('controllername', 'submenu'). But
    * typically, only like "array('menu');", in which case the $keys arg can be
-   * just the key string.
+   * just the key string, eg: 'menu'.
   
    * @param String $val: The HTML string to put in the slot
    */
@@ -116,9 +116,10 @@ class BaseController {
     if (!is_array($keys)) { #That's weird...
       throw new \Exception("Bad key value");
     }
-    $subarr = &static::$slots;
+    //$subarr = &static::$slots;
     #Recursive function to fill the array to appropriate depth..
-    static::fillArray($subarr,$keys,$val);
+    //static::fillArray($subarr,$keys,$val);
+    insert_into_array($keys,$val,static::$slots);
   }
 
   /**
@@ -163,28 +164,6 @@ class BaseController {
     header("Location: $redirectUrl");
     return;
   }
-
-  /** General array utility to traverse down an array of keys to end, then
-   * set value.
-   * @param array $fillArr
-   * @param array $keys
-   * @param type $val
-   */
-  public static function fillArray(Array &$fillArr, Array $keys, $val=null) {
-    if (empty($keys) || !sizeof($keys)) { #Shouldn't be here
-      throw new \Exception("Empty Keys array");
-    }
-    $key = array_shift($keys);
-    if (empty($keys) || !sizeOf($keys)) { #Hit bottom
-      $fillArr[$key] = $val;
-      return;
-    }
-    if (!isset($fillArr[$key])) {
-      $fillArr[$key] = array();
-    }
-    static::fillArray($fillArr[$key], $keys, $val);
-  }
-
   /** Retrieves the value at the end of the key chain. If not
    * set, returns null. Do same here as set -- call recursive function...
    * @param array $keys: Sequential indexed array of key names, or string

@@ -19,6 +19,14 @@
 namespace PKMVC;
 
 /**
+ * For everything that can be included in a form -- including a form itself,
+ * form elements/inputs, subforms, and FormSets/subform collections
+ */
+interface ElementInterface {
+  public function __toString();
+}
+
+/**
  * The base class for forms, subforms, and form elements (controls)
  * Naming Overload: All the angle-bracket enclosed stuff in HTML are
  * Elements - Here we use "Element" to mean "Submit" elements -- that is,
@@ -36,7 +44,9 @@ namespace PKMVC;
  * added to prior name_segment components. This can be overridden by instead
  * passing an explicit 'name' parameter, which will be used instead.
  */
-class BaseFormComponent extends PKMVCBase {
+abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
+  const TPL_STR = '__TEMPLATE__';
+  
   protected static $validAttributeNames = array('autocomplete', 'novalidate',);
   /**
    * @var Array: Names of class/instance attribute/members/properties that
@@ -109,7 +119,7 @@ class BaseFormComponent extends PKMVCBase {
   protected $is_template = false;
   public function __construct($args = null ) {
     $class = get_class($this);
-    pkdebug("CONSTRUCT FOR CLASS [$class]; args:", $args);
+    //pkdebug("CONSTRUCT FOR CLASS [$class]; args:", $args);
     //parent::__construct($args);
     $this->setValuesDefault();
 
@@ -135,6 +145,25 @@ class BaseFormComponent extends PKMVCBase {
 
   protected function getContent() {
     return $this->content;
+  }
+
+  /**
+   * Returns the an indexed array of the array keys of the element as they 
+   * would be in PHP $_POST, based on the element name. For example, if
+   * $this->getName() is: "user[profiles][4][profile_jobs][2][employer]",
+   * Returns: array('user','profiles',4,'profile_jobs',2,'employer');
+   * @return array: Indexed array of keys to depth. 
+   */
+  protected function getKeysFromName() {
+    $retarr = array();
+    $name = $this->getName();
+    $retarr = explode ('[',$name);
+    foreach ($retarr as &$retel) {
+      if (substr($retel,-1) == ']') {
+        $retel = trim($retel, "]") ;
+      }
+    }
+    return $retarr;
   }
 
   /**
@@ -234,6 +263,7 @@ class BaseFormComponent extends PKMVCBase {
     }
     //pkdebug("Leaving SetInstanceProperties, this is:", $this);
   }
+
   public function makeLabelCtl() {
     $labelCtl='';
     if ($this->label) {
@@ -256,14 +286,14 @@ class BaseFormComponent extends PKMVCBase {
   public function getName() {
     $class=get_class($this);
     if ($this->name) {
-      pkdebug("CLASS[$class]Returning just this->name: ".$this->name);
+     // pkdebug("CLASS[$class]Returning just this->name: ".$this->name);
       return $this->name;
     }
     $name = '';
     if ($this->name_segment) {
       if (!sizeof($this->name_segments)) {
         $this->name = $this->name_segment;
-      pkdebug("CLASS[$class]No 'segments'; Returning just this->segment_name: ".$this->name);
+      //pkdebug("CLASS[$class]No 'segments'; Returning just this->segment_name: ".$this->name);
         return $this->name;
       }
       foreach ($this->name_segments as $name_segment) {
@@ -276,7 +306,7 @@ class BaseFormComponent extends PKMVCBase {
       $name = $name."[{$this->name_segment}]";
     }
     $this->name = $name;
-    pkdebug("CLASS[$class] There WERE segments:", $this->name_segments," Returning just this->segment_name: ".$this->name);
+    //pkdebug("CLASS[$class] There WERE segments:", $this->name_segments," Returning just this->segment_name: ".$this->name);
     return $name;
   }
 
@@ -354,6 +384,10 @@ class BaseFormComponent extends PKMVCBase {
         || in_array($key,$exclusions)) {#For some reason, we want to skip these
         continue;
       } else if (static::isValidAttribute($key)) {
+        if (!is_string($val)) {
+          pkdebug("In ElSetvale, is attribute, key: [$key], value:", $val);
+          pkstack (4);
+        }
         $this->attributes[$key] = static::clean($val);
       } else { #Leftover args -- save for later?
         #But don't know what they are, so don't clean

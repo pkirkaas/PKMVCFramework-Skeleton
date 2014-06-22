@@ -121,53 +121,36 @@ class UserController extends AppController {
     if (!$user instanceOf BaseUser) {
       throw new \Exception ("No current user in Profile action");
     }
-    //$form = new BaseForm($user);
     $data = array();
     $user = $this->processPost($user);
-    //$user = $this->processPost($user, $form);
     $formElements = array(
+      'uname'=>array('label'=>'User Name', 'name_segment'=>'uname',
+          'placeholder'=>'User Name',),
         /*
-         * #with EXPLICIT 'name' values. Try with name segments...
-        'uname'=>array('label'=>'User Name', 'name'=>'user[uname]', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
-        'email'=>array('label'=>'Email?', 'name'=>'user[email]', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
-        'fname'=>array('label'=>'First Name', 'name'=>'user[fname]', 'placeholder'=>'Your First Name', 'value'=>$user->getFname()),
-        'lname'=>array('label'=>'Last Name', 'name'=>'user[lname]', 'placeholder'=>'Your Last Name', 'value'=>$user->getLname()),
-        #'profile_description'=>array('label'=>'Description?', 'name'=>'user[profile_description]', 'placeholder'=>'Describe Your Profile', 'value'=>$user->getProfileDescription()),
-        #'aboutme'=>array('label'=>'About me....', 'name'=>'user[aboutme]', 'placeholder'=>'Describe Yourself', 'value'=>$user->getAboutme()),
-        'profiles'=>array('type'=>'subform','scrolling'>true,'name'=>'user[profiles]', 'items'=>$user->getProfiles()),
-        'submit'=>array('type'=>'submit', 'name'=>'user[submit]', 'class'=>'input submit',
-            'value'=>"Submit To Me!"),
-         * *
+      'email'=>array('label'=>'Email?', 'name_segment'=>'email',
+          'placeholder'=>'Email',),
+      'fname'=>array('label'=>'First Name', 'name_segment'=>'fname',
+          'placeholder'=>'Your First Name',),
+      'lname'=>array('label'=>'Last Name', 'name_segment'=>'lname',
+          'placeholder'=>'Your Last Name', ),
          */
-        'uname'=>array('label'=>'User Name', 'name_segment'=>'uname', 'placeholder'=>'User Name', 'value'=>$user->getUname()),
-        'email'=>array('label'=>'Email?', 'name_segment'=>'email', 'placeholder'=>'Email', 'value'=>$user->getEmail()),
-        'fname'=>array('label'=>'First Name', 'name_segment'=>'fname', 'placeholder'=>'Your First Name', 'value'=>$user->getFname()),
-        'lname'=>array('label'=>'Last Name', 'name_segment'=>'lname', 'placeholder'=>'Your Last Name', 'value'=>$user->getLname()),
-        #'profile_description'=>array('label'=>'Description?', 'name'=>'user[profile_description]', 'placeholder'=>'Describe Your Profile', 'value'=>$user->getProfileDescription()),
-        #'aboutme'=>array('label'=>'About me....', 'name'=>'user[aboutme]', 'placeholder'=>'Describe Yourself', 'value'=>$user->getAboutme()),
-
-        #'profiles'=>array('subform'=>'profiles','scrolling'=>true,'name_segment'=>'profiles', 'class'=> 'doggy', 'items'=>$user->getProfiles()),
-        'profiles'=>array('subform'=>'profiles','name_segment'=>'profiles', 'class'=> 'doggy'),
-            'elements'=>
-                array('profile_description'=>array('name_segment'=>'profile_description', 'data-stuff'=>'fromUserController', 'placeholder'=>"Describe your profile", )),
-                array('profile_blah'=>array('type'=>'hidden', 'name_segment'=>'blah', 'data-stuff'=>'fromUserController', 'placeholder'=>"Describe your profile", )),
-
-        'submit'=>array('type'=>'submit', 'name_segment'=>'submit', 'class'=>'input submit',
-            'value'=>"Submit To Me!"),
+      'profiles'=>array('input'=>'collection','subform'=>'profiles',
+        'name_segment'=>'profiles', 'class'=> 'doggy',
+        'elements'=> array(
+          'profile_description'=>array('name_segment'=>'profile_description', 
+              'data-stuff'=>'fromUserController', 'label' => 'Prof Desc',
+              'placeholder'=>"Describe your profile", ),
+            /*
+          'profile_name'=>array('type'=>'text', 'name_segment'=>'profile_name',
+              'data-stuff'=>'fromUserController', 'label'=>'Prof Blah',
+              'placeholder'=>"Describe your Blah", )
+             */
+                  ),
+          ),
         );
-    $formArgs = array('base_object'=>$user, 'elements'=>$formElements, 'name_segment'=>'user');
-    //$form->addElement($formElements);
+    $formArgs = array('base_object'=>$user, 'elements'=>$formElements,
+        'name_segment'=>'user');
     $form = new BaseForm($formArgs);
-    //$user = $this->processPost($user, $form);
-
-    #Add multi-form ....
-    $profiles_cnt = 0; #Increment when have existing profiles...
-    //$subform = BaseForm::multiSubFormsSetup('profiles', 'Profile', 'forms/profilelineitem' /*How are items passed here?*/);
-    //$subformdisp = new RenderResult(array('idx'=>$profiles_cnt, 'collection_subform'=>(new RenderResult($subform, 'forms/profilesubform'))), 'forms/basecollection');
-    //$form ->addElement('psubform',$subformdisp);
-
-
-    
     $data['form'] = $form;
     return $data;
   }

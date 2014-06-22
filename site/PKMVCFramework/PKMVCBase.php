@@ -34,6 +34,16 @@ class PKMVCBase {
   }
    * 
    */
+
+
+
+
+
+
+
+
+
+  
   /**
    * Recurse up through inheretence hierarchy and merge static arrays of
    * the given arrayName name. This is for use by ::getMemberDirects(),
@@ -55,6 +65,7 @@ class PKMVCBase {
    *   merging strategy - $memberDirects are indexed, others assoc.
    * @return Array: Merged array of hierarchy
    */
+
   protected static function getAncestorArraysMerged($arrayName, $idx = false) {
      #First, build array of arrays....
      $retArr = array();
@@ -101,12 +112,16 @@ class PKMVCBase {
   /**
    * Returns an array of all declared classes derived from the base class
    * Of course, doesn't find autoload classes that haven't been loaded yet...
-   * @param String|Class|Object $baseClass: class name, interface, or instance
+   * @param String|Class|Object|NULL $baseClass: class name, interface, 
+   * instance, or NULL for calling class
+   * @return Array: All derived classes
    */
-  public static function getAllDerivedClasses ($baseClass) {
+  public static function getAllDerivedClasses ($baseClass = null) {
     #Get the class name if $baseClass an instance instead of a class name
     if (is_object($baseClass)) {
       $baseClass = get_class($baseClass);
+    } else if ($baseClass == null) {
+      $baseClass = get_called_class();
     }
     $classes = get_declared_classes();
     $all = $classes;
@@ -142,5 +157,43 @@ class PKMVCBase {
       }
     }
     return false;
+  }
+
+
+  /** General array utility to traverse down an array of keys to end, then
+   * set value. Like, to be able to set: $arr['spart']['utask'][5] = "Hello";
+   * when $arr['spart'] doesn't even exist yet.
+   * 
+   * Really just a function, no reason to be an object method.
+   * @param array & $fillArr: The REFERENCE to the array to be filled
+   * @param array $keys
+   * @param type $val
+   */
+  #Ah, well, an elegant solution to a problem that doesn't exist!
+  /*
+  public static function fillArray(Array &$fillArr, Array $keys, $val=null) {
+    if (empty($keys) || !sizeof($keys)) { #Shouldn't be here
+      throw new \Exception("Empty Keys array");
+    }
+    $key = array_shift($keys);
+    if (empty($keys) || !sizeOf($keys)) { #Hit bottom
+      $fillArr[$key] = $val;
+      return;
+    }
+    if (!isset($fillArr[$key])) {
+      $fillArr[$key] = array();
+    }
+    static::fillArray($fillArr[$key], $keys, $val);
+  }
+  */
+
+
+
+  /** Deep object copy. Can do something more clever with __clone() at some
+   * point, but for now...
+   * @return static copy of $this
+   */
+  public function copy() {
+    return unserialize(serialize($this));
   }
 }
