@@ -459,7 +459,8 @@ function array_flatten(/*$args*/) {
  * @param type $arg
  */
 function to_int ($arg) {
- return filter_var($arg, FILTER_VALIDATE_INT);
+ $arg = filter_var($arg, FILTER_VALIDATE_INT);
+ return $arg;
 }
 
 /**

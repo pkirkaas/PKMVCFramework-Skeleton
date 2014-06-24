@@ -101,6 +101,8 @@ class BaseForm extends BaseFormComponent {
    */
   protected $base_model = null;
 
+  protected $el_tag = "form";
+
   /**
    * @var String: The various form attributes and their defaults...
    */
@@ -322,12 +324,10 @@ class BaseForm extends BaseFormComponent {
     if (isset($args['elements'])) {
       $elements = $args['elements'];
      // pkdebug("this->namesegment: ". $this->name_segment, "SEGMENTS?", $this->name_segments);
-      $name_segments = $this->name_segments;
-      $name_segments[] = $this->name_segment;
       foreach ($elements as &$element) {
-        $element['name_segments'] = $name_segments;
+        $element['name_segments'] = $this->getNameSegments();
       }
-      $this->addElement($args['elements']);
+      $this->addElement($elements);
 
 
       /*
@@ -396,7 +396,7 @@ class BaseForm extends BaseFormComponent {
         continue;
       }
       $name = $element->getName();
-      $keyarr = $element->getKeysFromName();
+      $keyarr = $element->getNameSegments();
       if (array_keys_exist($keyarr,$retels)) {
         throw new \Exception("Duplicate element from [$name]");
       }
@@ -426,22 +426,10 @@ class BaseForm extends BaseFormComponent {
     if (!$args) {
       return;
     }
-    if (!empty($args['subform'])) {
-      $this->subform = $args['subform'];
-      //pkdebug("Building a subform with args:", $args);
-      //pkstack(2);
-    }
-
-    /*
-    if ($args instanceOf BaseModel) {
-      $this->base_object = $args;
-      $name = $args->getBaseName();
-      $this->setValuesDefault();
-      return;
-    }
-     */
     #Set defaults if not set -- id field and submit button
-    if (!$this->subform) {
+
+    //if (!$this->subform) {
+    if (get_class($this) == get_class()) {#Called from BaseForm, not subclass
       $idEl = $this->getElement('id', true); #Get the prototype element
       #If don't want default, set explicitly to null. Else, if undefined,
       #returns strict boolean false
@@ -518,7 +506,7 @@ class BaseForm extends BaseFormComponent {
    */
   public function openForm($echoId = true) {
     $attrStr = $this->makeAttrStr();
-    $formTag = "\n<form $attrStr >\n";
+    $formTag = "\n<{$this->el_tag} $attrStr >\n";
     return $formTag;
   }
 
@@ -527,8 +515,7 @@ class BaseForm extends BaseFormComponent {
    * 
    * @return string:  HTML  form close tag, and submit button...
    */
-  public function closeForm() { return "\n</form>\n"; }
-
+  public function closeForm() { return "\n<{$this->el_tag}>\n"; }
 
 
   /**
@@ -596,50 +583,19 @@ class BaseForm extends BaseFormComponent {
       if ($sval instanceOf BaseFormComponent) {#Is already el or subform...
         $elements[$skey] = $sval;
       } else if (is_array($sval)) { #Make element or subform from data array
-      /*
-        if (!isset($val['name_segments'])) {
-          $val['name_segments'] = $this->name_segments;
-        } else {
-          $this->name_segments = $val['name_segments'];
-        }
-       * */
-        /*
-        $val['name_segments'][]=$this->name_segment;
-        if (!isset($val['name'])) {
-          $val['name'] = $this->getName()."[{$this->name_segment}]";
-        }
-         * 
-         */
-        $name_segments = $this->name_segments;
-        $sval['name_segments'] = $name_segments;
-        $name_segments[]=$this->name_segment;
+        $sval['name_segments'] = $this->getNameSegments();
+        #Make Element or FormSet:
         if (isset($sval['subform'])   || # { #Making a subform...
-         (isset($sval['input']) && ($sval['input'] == 'collection'))) { #Making a subform...
-          #$sval['name_segments'] = $this->name_segments;
-          #$sval['name_segment'] = $this->name_segment;
-
-          #if (empty($sval['class'])) {
-          #   $sval['class'] = ' ';
-          #}
-          //pkdebug("Name_Segments:", $name_segments);
-          $sval['class'] .= ' '.$sval['subform'];
+         (isset($sval['input']) && ($sval['input'] == 'formset'))) { #Make formset
+          //$sval['class'] .= ' '.$sval['formset'];
+          $sval['class'] .= ' formset';
           //pkdebug("Trying to make a subform? With sval:", $sval);
-          //if (isset($sval['scrolling'])) {
-          //$elements[$skey] = new FormSet($sval);
-          $elements[$skey] = $this->makeCollectionSubform($sval);
-          //} else {
-          //  pkdebug("Making a new subform with sval:", $sval);
-           // $elements[$skey] = new BaseForm($sval);
-         // }
+          $elements[$skey] = new FormSet($sval);
         } else {
-          
-          $name_segments[] = $this->name_segment;
-          $sval['name_segments'] = $name_segments;
           $elements[$skey] = new BaseElement($sval);
         }
       } else { #Bad element value 
-        $svalType = typeOf($sval);
-        throw new \Exception("Bad El type [$svalType] for Key: [$skey]");
+        throw new \Exception("Bad El [".print_r($sval,1)."] for Key: [$skey]");
       }
     }
     return $elements;
@@ -689,17 +645,18 @@ public function makeCollectionSubform(Array $params) {
    */
   public function bind($arg = null) {
     if (!$arg) {
-      $data = $this->getBaseObject()->getArrayCopy();
+      $data = $this->getBaseObject();
     } else if ($arg instanceOf BaseModel) {
-      $data = $arg->getArrayCopy();
+      $data = $arg; //->getArrayCopy();
     } else if (is_array($arg)) {
       $data = $arg;
-    } else if (is_a($arg, BaseModel, true )) {
+    } else if (is_a($arg, BaseModel, true )) {#$arg name of BaseModel Sublclass
       $emptyObj = new $arg();
-      $data = $emptyObj ->getArrayCopy(); 
+      $data = $emptyObj; // ->getArrayCopy(); 
     } else {
       throw new \Exception("Bad arg to bind: [".print_r($arg, true).']');
     }
+    $this->bind_data = $data;
     #Data should now be an appropriate associative array of values
     $elements = $this->getElements();
     $elArr = $this->asArray();
@@ -743,18 +700,9 @@ public function makeCollectionSubform(Array $params) {
     }
     #No template, no renderResult - output default, which is all elements  
     #BUT -- if it is topLevel form, output open & close tags as well....
-    if (!$this->subform) {
-      //return $this->openForm().$this->getElements().$this->closeForm();
-      $elements = $this->getElements();
-      pkdebug("RendRes 3; elements:::",$elements);
-
-      return $this->openForm().$elements.$this->closeForm();
-    } #Ah, so we do have a subform...
-    $attrStr = $this->makeAttrStr();
-
-      pkdebug("RendRes 4; this:",$this);
-    return "<fieldset  data-nonsens='here' $attrStr>"."BYEBYE"."</fieldset>";
-    return "<fieldset  data-nonsens='here' $attrStr>".$this->getElements()."</fieldset>";
+    $elements = $this->getElements();
+    pkdebug("RendRes 3; elements:::",$elements);
+    return $this->openForm().$elements.$this->closeForm();
   }
 
   /** Returns an input element by name in assoc array. Can be empty/null if
@@ -893,60 +841,37 @@ public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = 
  * attribute)
  */
 class SubForm extends BaseForm {
-  public function __toString() {
-    $idx = $this->idx;
-    if ($idx == static::TPL_STR) { #Template 
-     
-    }
-    return "<fieldset style='border:solid blue 1px;'>This is the subform</fieldset>";
-  }
-
-  public function setValues(Array $args = array(), $exclusions = array(), $useDefaults = true) {
-    parent::setValues($args, $exclusions, $useDefaults);
-  }
-
+  protected $el_tag = 'fieldset';
 }
 
 /** Specifically for repeating subforms -- the __toString method includes the
  * form template and wraps them all in a div/fieldset
  */
-class FormSet extends PartialSet implements ElementInterface {
-  protected function __get($name) {
-  }
+class FormSet extends BaseForm {
   /**
-   *
-   * @var PartialSet: collection of identical forms (except for content)
-   * Want as PartialSet instead of just array to allow __toString()
-   */
-  /**
-   *
    * @var PKMVC\PartialSet of individual subform sets, one per subitem
    */
-  //protected $forms = null;
-  //protected $idx = self::TPL_STR;
+  protected $subforms;
+  protected $el_tag = 'fieldset';
+  protected $template_form;
+  protected $base_form;
+  protected static $instancePropertyNames = array('subforms', 'base_form');
+  public function __construct($args = array()) {
+    $this->subforms = new PartialSet();
+    parent::__construct($args);
+    $this->base_form = new SubForm($args);
 
-  /**
-   * @var Array: The set of objects to match to the forms, or array of 
-   * data arrays if not objs
-   */
-  //protected $data = array();
-  //protected $objs = array();
-  /**
-   *
-   * @var BaseForm: The base form instance to clone & populate
-   */
-  //protected $base_form;
-  //protected static $otherAttributeNames = array('base_form', 'objs', 'data');
+  }
 
-  //public function __construct($args = null) {
-    //pkdebug("Making a collection/FormSet, with args:", $args);
-   // $this->scrolling = true;
-    //$this->forms = new PartialSet();
-    //parent::__construct($args);
-
-  //}
+  public function getTemplate() {
+    $template = $this->base_form->copy();
+    $template->addNameSegment(static::TPL_STR);
+    return $template;
+  }
 
 
+
+  /*
   public function __toString() {
     $idx = $this->idx;
     if ($idx === static::TPL_STR) { #Template 
@@ -954,5 +879,6 @@ class FormSet extends PartialSet implements ElementInterface {
     }
     return "<fieldset style='border:solid blue 1px;'>This is the subform</fieldset>";
   }
+   */
 
 }

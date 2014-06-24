@@ -134,7 +134,7 @@ class UserController extends AppController {
       'lname'=>array('label'=>'Last Name', 'name_segment'=>'lname',
           'placeholder'=>'Your Last Name', ),
          */
-      'profiles'=>array('input'=>'collection','subform'=>'profiles',
+      'profiles'=>array('input'=>'formset','subform'=>'profiles',
         'name_segment'=>'profiles', 'class'=> 'doggy',
         'elements'=> array(
           'profile_description'=>array('name_segment'=>'profile_description', 

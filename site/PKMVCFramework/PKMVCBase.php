@@ -29,20 +29,25 @@ class PKMVCBase {
      'style', 'tabindex', 'title', 'translate',
   );
 
-  /*
-  public function __construct($args=null) {
-  }
-   * 
+  /**
+   * Returns the class name of the requested ancestor as specified in the index
+   * (parent, grandparent, etc), or array of all ancestors if $idx === null.
+   * @param int|null $idx: The index of the requested ancestor (0 for parent,
+   * 1 for grandparent), or NULL for an array of all ancestors
+   * @return null|String: Class Name of the specified ancestor, or null 
    */
-
-
-
-
-
-
-
-
-
+  public static function getAncestor($idx = null) {
+    $class = get_called_class();
+    $ancestors = ancestry($class);
+    if ($idx === null ){ 
+      return $ancestors;
+    }
+    $idx = to_int($idx);
+    if ($idx >= sizeof($ancestors)) {
+      return null;
+    }
+    return $ancestors[$idx];
+  }
   
   /**
    * Recurse up through inheretence hierarchy and merge static arrays of

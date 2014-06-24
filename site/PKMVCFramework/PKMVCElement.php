@@ -24,6 +24,10 @@ namespace PKMVC;
  */
 interface ElementInterface {
   public function __toString();
+  public function bind($arg = null);
+  public function setValues(Array $args = array(),
+          $exclusions = array(), $useDefaults = true);
+  public function getName();
 }
 
 /**
@@ -43,18 +47,28 @@ interface ElementInterface {
  * 'name_segment' string - not a full array/sequence. The name_segment will be
  * added to prior name_segment components. This can be overridden by instead
  * passing an explicit 'name' parameter, which will be used instead.
+ * 
+ * Concepts:
+ * Name_Segments: Components of the Element/Form name. 
+ * For instance, for a "User" control, the form
+ * name will be 'user', the hidden 'id' element will have the name_segment "id",
+ * the name segments
+ * will be array('user','id');. If the user object has multiple profiles, say,
+ * for profile name, the name_segments might be:
+ * array('user','profiles','','name');
+ * where the empty string component would be replaced by an index count.
  */
 abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
   const TPL_STR = '__TEMPLATE__';
   
-  protected static $validAttributeNames = array('autocomplete', 'novalidate',);
+  protected static $validAttributeNames = array('autocomplete', 'novalidate', 
+      'disabled');
   /**
    * @var Array: Names of class/instance attribute/members/properties that
    * can be set by initialization
    */
   protected static $instancePropertyNames = array('name', 'label', 'for',);
-      //'name_segment', 'name_segments');
-  protected static $otherAttributeNames = array('name_segment', 'name_segments');
+  //protected static $otherAttributeNames = array('name_segment', 'name_segments');
   protected $attributes = array();
   protected $otherAttributes = array();
 
@@ -68,37 +82,18 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
 
 
 
-  /** @var array: Hack to exclude certain legitimate HTML attribute values from being 
-   * set in attrString because we will be handling them specially...
+  /** @var array: Hack to exclude certain legitimate HTML attribute values from
+   * being set in attrString because we will be handling them specially...
    */
   protected static $valueExclusions = array();
-  /**
-   *
-   * @var String: If set, will be the name of the control. If not set, the
-   * name will be build from ->name_segments & ->name_segment
-   */
+  /** @var String: The HTML name of the control */
   protected $name = '';
   protected $label = '';
   protected $for = '';
-  /**
-   *
-   * @var Array: Form and control name segments, to be assembled into the
-   * HTML input element name, unless the "name" property is set, to override it. 
-   * 
-   * For instance, for a "User" control, the form
-   * name will be 'user', the hidden 'id' element will have the name_segment "id",
-   * the name segments
-   * will be array('user','id');. If the user object has multiple profiles, say,
-   * for profile name, the name_segments might be:
-   * array('user','profiles','','name');
-   * where the empty string component would be replaced by an index count.
-   */
-  protected $name_segments = array();
-  /**
-   *
-   * @var String: The current name segment. 
-   */
-  protected $name_segment = '';
+
+  /** @var mixed. data (array or scalar) to be bound to the form/element */
+  protected $bind_data;
+
   /**
    * @var Array: Copy of the original arguments to create or set this thing,
    * in case we want create a form instead of an element or v/v  
@@ -106,7 +101,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
   protected $origArgs; 
 
   /**
-   *
    * @var mixed -- the 'value' of the control. In most cases, the 'value' 
    * attribute of the HTML control, except for textarea, where it is the content
    * between the open/close <textarea>Content</textarea> tags.
@@ -117,6 +111,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * @var Boolean 
    */
   protected $is_template = false;
+
   public function __construct($args = null ) {
     $class = get_class($this);
     //pkdebug("CONSTRUCT FOR CLASS [$class]; args:", $args);
@@ -143,20 +138,42 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     $this->content = $content;
   }
 
+  /**
+   * Here, does nothing but save the bind data. Subclasses do the work.
+   * @param mixed $arg: Data to bind to form/element
+   */
+  public function bind($arg = null) {
+    if ($arg) {
+      $this->bind_data = $arg;
+    }
+    $this->setContent($arg);
+  }
+
   protected function getContent() {
     return $this->content;
   }
 
   /**
-   * Returns the an indexed array of the array keys of the element as they 
+   * Name segments are implemented / set/get from the name.
+   * Returns an array of name segments
+   */
+
+
+
+  /**
+   * Returns the an indexed array of the array keys (name_segments)
+   * of the element as they 
    * would be in PHP $_POST, based on the element name. For example, if
    * $this->getName() is: "user[profiles][4][profile_jobs][2][employer]",
    * Returns: array('user','profiles',4,'profile_jobs',2,'employer');
    * @return array: Indexed array of keys to depth. 
    */
-  protected function getKeysFromName() {
+  public function getNameSegments() {
     $retarr = array();
     $name = $this->getName();
+    if (!$name || !sizeOf($name)) {
+      return null;
+    }
     $retarr = explode ('[',$name);
     foreach ($retarr as &$retel) {
       if (substr($retel,-1) == ']') {
@@ -165,6 +182,52 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     }
     return $retarr;
   }
+
+  public function getNameSegment() {
+    $segments = $this->getNameSegments();
+    if (!$segments || !sizeOf($segments)) {
+      return null;
+    }
+    return $segments[sizeOf($segments)-1];
+  }
+
+  public function addNameSegment($nameSegment) {
+    if (!$this->getName()) {
+      $this->setName($nameSegment);
+    } else {
+      $this->setName($this->getName()."[$nameSegment]");
+    }
+  }
+
+  /**
+   * Sets the name of the form/subform/element.
+   * @param string|array $names: Either a string name in the form
+   * "user[shopping_cart][items][3][item_id]" or an array in the form:
+   * array('user','shopping_cart','items','3','item_id'), used to build the name
+   * @return string: The constructed control/element name
+   */
+  public function setName($names) {
+    if (!$names || !sizeOf($names)) {
+      $this->name = null;
+      return;
+    }
+    if (is_string($names)) {
+      $this->name = $names;
+    } else if (is_array($names)) {
+      $name = '';
+      foreach ($names as $name_segment) {
+        if (!$name) {
+          $name = $name_segment;
+        } else {
+          $name=$name."[$name_segment]";
+        }
+      }
+      $this->name = $name;
+    } else {
+      throw new Exception("Bad name paramater: ".print_r($names, true));
+    }
+  }
+
 
   /**
    * Sets any default attributes for this element/form. Called first
@@ -278,36 +341,11 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
   }
 
   /**
-   * Returns the control name, built from the name_segments array an the current
-   * name. IF you want to override the default name_segments, just set it to null
-   * explicitly when creating the control/form.
-   * @return String
+   * Returns the HTML control name
+   * @return String: The HTML name of the form/element
    */
   public function getName() {
-    $class=get_class($this);
-    if ($this->name) {
-     // pkdebug("CLASS[$class]Returning just this->name: ".$this->name);
-      return $this->name;
-    }
-    $name = '';
-    if ($this->name_segment) {
-      if (!sizeof($this->name_segments)) {
-        $this->name = $this->name_segment;
-      //pkdebug("CLASS[$class]No 'segments'; Returning just this->segment_name: ".$this->name);
-        return $this->name;
-      }
-      foreach ($this->name_segments as $name_segment) {
-        if (!$name) {
-          $name = $name_segment;
-        } else {
-          $name=$name."[$name_segment]";
-        }
-      }
-      $name = $name."[{$this->name_segment}]";
-    }
-    $this->name = $name;
-    //pkdebug("CLASS[$class] There WERE segments:", $this->name_segments," Returning just this->segment_name: ".$this->name);
-    return $name;
+    return $this->name;
   }
 
   /**
@@ -359,20 +397,14 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
       return $this;
     }
     $this->origArgs = $args; #Let's keep all the original args, in case...
-    if (!empty($args['name_segments'])) {
-      $this->name_segments = $args['name_segments'];
+    if (!empty($args['name'])) {
+      $this->setName($args['name']);
+    } else if (!empty($args['name_segments'])) {
+      $this->setName($args['name_segments']);
     }
     if (!empty($args['name_segment'])) {
-      $this->name_segment = $args['name_segment'];
+      $this->addNameSegment($args['name_segment']);
     }
-    /*
-     * 
-     */
-    if (!empty($args['name'])) {
-      $this->name = $args['name'];
-    }
-    //$this->name_segments[] = $this->name;
-
     #Set the "normal" attribute values first
     //$this->setAttributeVals($args);
     $this->setInstanceProperties($args);
@@ -396,13 +428,10 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
       }
     }
     #Finalize, after basics
-    if (isset($this->attributes['input'])) {
-      if (($this->attributes['input'] == 'textarea') 
-          && isset($this->otherAttributes['content'])) {
-        $this->content = $this->otherAttributes['content'];
-      } else if (isset($this->attributes['value'])) {
-        $this->content = $this->atttributes['value'];
-      }
+    if (isset($this->otherAttributes['content'])) {
+        $this->setContent($this->otherAttributes['content']);
+    } else if (isset($this->attributes['value'])) {
+      $this->setContent($this->attributes['value']);
     }
   }
 
@@ -506,6 +535,8 @@ class BaseElement extends BaseFormComponent {
    * 'data-XXX' attributes. isValidAttribute also checks a separate list of
    * HTML Global attributes which are not specific to form elements and not
    * in this array.
+   * 
+   * TODO: Abstract to allow adding of custom elements. 
    */
   protected static $validAttributeNames = array(
       'accesskey', 'class', 'contenteditable', 'contextmenu', 'dir',
@@ -637,6 +668,10 @@ class BaseElement extends BaseFormComponent {
   }
 
 
+  public function bind($arg = null) {
+    parent::bind($arg);
+    $this->setContent($arg);
+  }
 
   public function getInputStr() {
     return $this->inputStr;
