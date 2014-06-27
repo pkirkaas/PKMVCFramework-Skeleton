@@ -316,16 +316,16 @@ class BaseForm extends BaseFormComponent {
     static $count = 0;
     if (isset($args['subform'])) {
       $useDefaults = false;
-      //pkdebug("Making subform, args:", $args);
     }
     parent::setValues($args, $exclusions, $useDefaults); #Takes care of the regular attributes
 
     #Set elements if present....
     if (isset($args['elements'])) {
       $elements = $args['elements'];
-     // pkdebug("this->namesegment: ". $this->name_segment, "SEGMENTS?", $this->name_segments);
       foreach ($elements as &$element) {
-        $element['name_segments'] = $this->getNameSegments();
+        //$element['name_segments'] = $name_segments; //$this->getNameSegments();
+        $element['name_segments'] = array("Hello", "Goodbye");
+
       }
       $this->addElement($elements);
 
@@ -428,7 +428,8 @@ class BaseForm extends BaseFormComponent {
     }
     #Set defaults if not set -- id field and submit button
 
-    //if (!$this->subform) {
+    #Add default elements (hidden iD, Submit) if this is a top-level form
+    #and if default elemments not specifically given or set to null...
     if (get_class($this) == get_class()) {#Called from BaseForm, not subclass
       $idEl = $this->getElement('id', true); #Get the prototype element
       #If don't want default, set explicitly to null. Else, if undefined,
@@ -559,7 +560,6 @@ class BaseForm extends BaseFormComponent {
       $elements = & $this->elements_proto;
     } else {
       $elements = & $this->elements_inst;
-
     }
 
     #Is $key array of names/elements, or a string name, with an element value?
@@ -589,7 +589,6 @@ class BaseForm extends BaseFormComponent {
          (isset($sval['input']) && ($sval['input'] == 'formset'))) { #Make formset
           //$sval['class'] .= ' '.$sval['formset'];
           $sval['class'] .= ' formset';
-          //pkdebug("Trying to make a subform? With sval:", $sval);
           $elements[$skey] = new FormSet($sval);
         } else {
           $elements[$skey] = new BaseElement($sval);
@@ -621,6 +620,7 @@ class BaseForm extends BaseFormComponent {
    * @return \PKMVC\FormSet: Scrolling multi-subform template
    */
 
+  /*
 public function makeCollectionSubform(Array $params) {
   $elname = cln_arr_val($params,'name_segment');
   if ($elname) {
@@ -634,6 +634,8 @@ public function makeCollectionSubform(Array $params) {
   $collectionSubform = new FormSet($params);
   return $collectionSubform;
 }
+   * 
+   */
 
   /**
    * If form based on underlying object, bind/set the values from the object
@@ -670,7 +672,8 @@ public function makeCollectionSubform(Array $params) {
    * @param Array|BaseModel $data
    */
   public function bindRecursive(&$elArr, $data) {
-    foreach ($elArr as &$el) {
+    foreach ($elArr as $key => &$el) {
+      #The $element $key should match the $data $key
 
     }
 
@@ -687,7 +690,6 @@ public function makeCollectionSubform(Array $params) {
     $this->bind();
     if ($this->getRenderResult()) {
       //return $this->renderResult->__toString();
-      pkdebug("RendRes 1; this:",$this);
       return $this->renderResult;
     }
     if ($this->template) {
@@ -695,13 +697,11 @@ public function makeCollectionSubform(Array $params) {
         $this->renderResult = new RenderResult($this->renderData, $this->template);
       }
       //return $this->renderResult->__toString();
-      pkdebug("RendRes 2; this:",$this);
       return $this->renderResult;
     }
     #No template, no renderResult - output default, which is all elements  
     #BUT -- if it is topLevel form, output open & close tags as well....
     $elements = $this->getElements();
-    pkdebug("RendRes 3; elements:::",$elements);
     return $this->openForm().$elements.$this->closeForm();
   }
 
@@ -842,34 +842,42 @@ public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = 
  */
 class SubForm extends BaseForm {
   protected $el_tag = 'fieldset';
+  protected static $classDefaultAttributes = array();
 }
 
 /** Specifically for repeating subforms -- the __toString method includes the
  * form template and wraps them all in a div/fieldset
  */
-class FormSet extends BaseForm {
+class FormSet extends SubForm {
   /**
    * @var PKMVC\PartialSet of individual subform sets, one per subitem
    */
   protected $subforms;
-  protected $el_tag = 'fieldset';
   protected $template_form;
   protected $base_form;
   protected static $instancePropertyNames = array('subforms', 'base_form');
   public function __construct($args = array()) {
+    $this->scrolling = true;
     $this->subforms = new PartialSet();
     parent::__construct($args);
+    $args['scrolling'] = true;
+    //$args['class'] = "TEST-CREATE-SUBFORM";
+    //$args['name_segments'] = array("From","Formset", "Create");
     $this->base_form = new SubForm($args);
 
   }
 
   public function getTemplate() {
     $template = $this->base_form->copy();
-    $template->addNameSegment(static::TPL_STR);
+    //$template->addNameSegment(static::TPL_STR);
     return $template;
   }
 
 
+  public function additionalClassAttributes() {
+    $template = $this->getTemplate();
+    return "data-template='".html_encode($template)."'";
+  }
 
   /*
   public function __toString() {

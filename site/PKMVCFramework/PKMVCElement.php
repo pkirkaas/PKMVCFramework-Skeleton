@@ -114,8 +114,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
 
   public function __construct($args = null ) {
     $class = get_class($this);
-    //pkdebug("CONSTRUCT FOR CLASS [$class]; args:", $args);
-    //parent::__construct($args);
     $this->setValuesDefault();
 
     #set some defaults, then call set Values with rest
@@ -318,13 +316,11 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     #Trust static instancePropertyNames...
     $iprops = static::getInstancePropertyNames();
     $className = get_class();
-    //pkdebug("SETTING INSTANCE PROPS for class [$className], PROPS are:", $iprops, "args are:", $args);
     foreach ($args as $key => $value) {
       if (in_array($key, $iprops )) {
         $this->$key = $value;
       }
     }
-    //pkdebug("Leaving SetInstanceProperties, this is:", $this);
   }
 
   public function makeLabelCtl() {
@@ -405,6 +401,20 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     if (!empty($args['name_segment'])) {
       $this->addNameSegment($args['name_segment']);
     }
+    if (!empty($args['scrolling'])) {
+      $this->addNameSegment('');
+    }
+    
+
+
+
+
+
+
+
+
+
+
     #Set the "normal" attribute values first
     //$this->setAttributeVals($args);
     $this->setInstanceProperties($args);
@@ -417,7 +427,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
         continue;
       } else if (static::isValidAttribute($key)) {
         if (!is_string($val)) {
-          pkdebug("In ElSetvale, is attribute, key: [$key], value:", $val);
+
           pkstack (4);
         }
         $this->attributes[$key] = static::clean($val);
@@ -449,6 +459,14 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
   public function setAttributeVals($args = array(), $exclusions = array()) {
 
   }
+
+  /**
+   * Does nothing here, but allows subclasses to define additional attributes
+   * @return string: Empty here.
+   */
+  public function additionalClassAttributes() {
+    return '';
+  }
   
 
   /**
@@ -461,7 +479,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * like: " name='aname' class='aclass' ... "
    */
   public function makeAttrStr($defaults = array(), $exclusions = array()) {
-    //pkdebug ("This Element:", $this);
 
     //$attrStr = " name='".$this->getName()."' ";
     $attrStr = " name='".$this->getName()."' ";
@@ -485,6 +502,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
         $attrStr .= " $key='$value' ";
       }
     }
+    $attrStr .= $this->additionalClassAttributes();
     return $attrStr;
   }
 

@@ -126,25 +126,21 @@ class UserController extends AppController {
     $formElements = array(
       'uname'=>array('label'=>'User Name', 'name_segment'=>'uname',
           'placeholder'=>'User Name',),
-        /*
       'email'=>array('label'=>'Email?', 'name_segment'=>'email',
           'placeholder'=>'Email',),
       'fname'=>array('label'=>'First Name', 'name_segment'=>'fname',
           'placeholder'=>'Your First Name',),
       'lname'=>array('label'=>'Last Name', 'name_segment'=>'lname',
           'placeholder'=>'Your Last Name', ),
-         */
       'profiles'=>array('input'=>'formset','subform'=>'profiles',
         'name_segment'=>'profiles', 'class'=> 'doggy',
         'elements'=> array(
           'profile_description'=>array('name_segment'=>'profile_description', 
               'data-stuff'=>'fromUserController', 'label' => 'Prof Desc',
               'placeholder'=>"Describe your profile", ),
-            /*
           'profile_name'=>array('type'=>'text', 'name_segment'=>'profile_name',
               'data-stuff'=>'fromUserController', 'label'=>'Prof Blah',
               'placeholder'=>"Describe your Blah", )
-             */
                   ),
           ),
         );

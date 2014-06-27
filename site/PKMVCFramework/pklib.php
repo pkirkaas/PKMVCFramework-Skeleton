@@ -64,7 +64,7 @@ function pkdebug_base() {
   //$frame = $stack[0];
   //$frame = $stack[1];
   //$out = "\n".date('j-M-y; H:i:s').': '.$frame['file'].": ".$frame['function'].': '.$frame['line'].": \n  ";
-  $out = "STACKSIZE: $stacksize\n";
+  $out = "PKDEBUG OUT: STACKSIZE: $stacksize\n";
   /*
     if (!isset($frame['file']) || !isset($frame['line'])) {
     $out.="\n\nStack Frame; no 'file': ";
@@ -131,7 +131,7 @@ function pkstack($depth = 10) {
  * @param type $depth
  * @return string
  */
-function pkstack_base($depth = 10) {
+function pkstack_base($depth = 10, $args=false) {
   //if (sfConfig::get('release_content_env') != 'dev') return;
   $stack = debug_backtrace();
   $stacksize = sizeof($stack);
@@ -139,8 +139,7 @@ function pkstack_base($depth = 10) {
     $depth = $stacksize;
   }
   $frame = $stack[0];
-  $out = date('j-M-y; H:i:s') . "\n";
-  $out .= "Stack Depth: $stacksize; backtrace depth: $depth\n";
+  $out = "STACKTRACE: ".date('j-M-y; H:i:s').": Stack Depth: $stacksize; backtrace depth: $depth\n";
   //pkdebugOut($out);
   ////pkdebugOut("Stack Depth: $stacksize; backtrace depth: $depth\n");
   $i = 0;
@@ -150,8 +149,14 @@ function pkstack_base($depth = 10) {
       $i++;
       continue;
     }
-    
-    $out .= pkvardump($frame) . "\n";
+    //$out .= pkvardump($frame) . "\n";
+    if (!empty($frame['file'])) $out.=$frame['file'].': ';
+    if (!empty($frame['line'])) $out.=$frame['line'].': ';
+    if (!empty($frame['function'])) $out.=$frame['function'].': ';
+    if (!empty($frame['class'])) $out.=$frame['class'].': ';
+    $out.="\n";
+    if ($args) $out .= "Args:" . pkvardump($frame['args']) . "\n";
+    //$out .= "Args:" . print_r($frame['args'],true) . "\n";
     if (++$i >= $depth) {
       break;
     }
@@ -196,7 +201,6 @@ function pkcatchecho ($runnable) {
   ob_end_clean();
   ini_set('xdebug.overload_var_dump', 1);
   return "<pre>$vardump</pre>";
-
 }
 
 function pkvardump($arg, $disableXdebug = true) {
@@ -212,12 +216,31 @@ function pkvardump($arg, $disableXdebug = true) {
   return $vardump;
 }
 
+function appLogPath($path = null) {
+  $defaultPath = $_SERVER['DOCUMENT_ROOT'] . '/logs/app.log'; 
+  static $logpath = null;
+  if ($path === false) {
+    $logpath = $defaultPath;
+    return $logpath;
+  }
+  if (!$path) {
+    if (!$logpath) {
+      $logpath = $defaultPath;
+    }
+    return $logpath;
+  }
+  $logpath = $path;
+  return $logpath;
+}
+
 //Outputs to the destination specified by $useDebugLog
 function pkdebugOut($str) {
   if (true) {
   //  try {
       //$logpath = $_SERVER['DOCUMENT_ROOT'].'/../app/logs/app.log';
-      $logpath = $_SERVER['DOCUMENT_ROOT'] . '/logs/app.log';
+      //$logpath =  WP_CONTENT_DIR.'/app.log';
+      //$logpath = $_SERVER['DOCUMENT_ROOT'] . '/logs/app.log';
+      $logpath = appLogPath();
       $fp = fopen($logpath, 'a+');
       if (!$fp)
         throw new Exception("Failed to open DebugLog [$logpath] for writing");
