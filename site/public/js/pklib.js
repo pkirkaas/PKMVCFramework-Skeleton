@@ -5,6 +5,32 @@
  * @license   http://opensource.org/licenses/BSD-3-Clause  
  */
 
+$(function() {
+  $('.formset').on('click', '.new-from-formset-tpl', function(event) {newSubForm(event, this);});
+  $('.formset').on('click', '.delete-row-button', function(event)
+     { $(this).closest('.multi-subform').remove();});
+
+});
+
+function newSubForm(myevent, me) {
+  if (typeof PKMVC_TPL_STR === "undefined") {
+    PKMVC_TPL_STR = "__TEMPLATE_JS__";
+  }
+  var container = $(me).closest('.formset');
+  var template = container.attr('data-template');
+  //console.log("In Subform: Event:", myevent, "ME:", me, "Data Template:", template, "PKMVC_TPL_STR", PKMVC_TPL_STR);
+  //  data('cell-template');
+  var fseqno = parseInt($(me).attr('data-count'));
+  var regexstr = PKMVC_TPL_STR;
+  var regexobj = new RegExp(regexstr,'g');
+  console.log("In Subform: PKMVC_TPL_STR", PKMVC_TPL_STR, "RegExObj:", regexobj);
+  var newstr = template.replace(regexobj, fseqno);
+  fseqno++;
+  $(me).attr('data-count', fseqno);
+  console.log("The New Template:", newstr);
+  container.append(newstr);
+}
+
 
 /**
  * Takes an array of GET key/value pairs, adds (or replaces) them, and redirects
@@ -82,7 +108,8 @@ function getGets() {
 
 
 /**
- * 
+ *Converts an array of key/values to a an '&' separated GET string of params
+ *values. 
  * @param {type} getArr: Array of GET key/value pairs
  * @returns String: converted array of GET params to a query string
  */

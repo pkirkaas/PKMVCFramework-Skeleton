@@ -212,7 +212,7 @@ class BaseForm extends BaseFormComponent {
    * @param boolean $proto: Return the prototype elements, or instance elements?
    * @return PartialSet: elements/instances of BaseFormComponent
    */
-  protected function getElements($proto = false) {
+  protected function &getElements($proto = false) {
     if ((!$this->elements_prot) || !sizeOf($this->elements_prot)) {
       $this->elements_prot = new PartialSet();
     }
@@ -223,6 +223,14 @@ class BaseForm extends BaseFormComponent {
       $this->elements_inst = $this->elements_prot->copy();
     }
     return $this->elements_inst;
+  }
+
+
+  protected function &getElementsDefault($proto = false) {
+    if ($this->getElements(false) && sizeOf($this->getElements(false))) {
+      return $this->getElements(false);
+    }
+    return $this->getElements(true);
   }
 
   public function setBaseObject($base_object) {
@@ -397,10 +405,12 @@ class BaseForm extends BaseFormComponent {
       }
       $name = $element->getName();
       $keyarr = $element->getNameSegments();
-      if (array_keys_exist($keyarr,$retels)) {
+      if (($keyarr && $retels) &&  array_keys_exist($keyarr,$retels)) {
         throw new \Exception("Duplicate element from [$name]");
       }
-      insert_into_array($keyarr, $element, $retels);
+      if (is_array($keyarr)) {
+        insert_into_array($keyarr, $element, $retels);
+      }
     }
     return $retels;
   }
@@ -516,7 +526,7 @@ class BaseForm extends BaseFormComponent {
    * 
    * @return string:  HTML  form close tag, and submit button...
    */
-  public function closeForm() { return "\n<{$this->el_tag}>\n"; }
+  public function closeForm() { return "\n</{$this->el_tag}>\n"; }
 
 
   /**
@@ -660,7 +670,7 @@ public function makeCollectionSubform(Array $params) {
     }
     $this->bind_data = $data;
     #Data should now be an appropriate associative array of values
-    $elements = $this->getElements();
+    $elements = $this->getElementsDefault();
     $elArr = $this->asArray();
     $this->bindRecursive($elArr, $data);
   }
@@ -701,7 +711,8 @@ public function makeCollectionSubform(Array $params) {
     }
     #No template, no renderResult - output default, which is all elements  
     #BUT -- if it is topLevel form, output open & close tags as well....
-    $elements = $this->getElements();
+    $elements = $this->getElementsDefault();
+    //pkdebug("In TOSTRING: Elements", $elements);
     return $this->openForm().$elements.$this->closeForm();
   }
 
@@ -853,21 +864,59 @@ class FormSet extends SubForm {
    * @var PKMVC\PartialSet of individual subform sets, one per subitem
    */
   protected $subforms;
+  /** @var: Then number of subitems/subforms */
+  protected $count = 0;
   protected $template_form;
   protected $base_form;
   protected static $instancePropertyNames = array('subforms', 'base_form');
   public function __construct($args = array()) {
     $this->scrolling = true;
     $this->subforms = new PartialSet();
+    #Customize args for building scrolling subform base_form/template:
+    $subargs = $args;
+    unset($args['elements']);
     parent::__construct($args);
+    $name_segments = $this->getNameSegments();
+    $name_segments[]=static::TPL_STR;
+    $subargs['name_segments'] = $name_segments;
+    $subargs['class'] = 'multi-subform';
+
+    unset($subargs['name_segment']);
+
+    #Add delete button if it isn't specified in subargs...
+    if (!array_key_exists('elements',$subargs) 
+            ||!array_key_exists('delete',$subargs['elements'])) {
+      $subargs['elements']['delete']=array('input'=>'html', 
+        'content' =>
+          "<button type='button' class='pkmvc-button delete-row-button'>Delete</button>");
+    }
+    $this->base_form = new SubForm($subargs);
+  pkdebug("SubArgs:",$subargs,"base_form:", $this->base_form);
+    unset($args['elements']);
     $args['scrolling'] = true;
     //$args['class'] = "TEST-CREATE-SUBFORM";
     //$args['name_segments'] = array("From","Formset", "Create");
-    $this->base_form = new SubForm($args);
-
+    #Create default elements, like "Create Item" button
   }
 
-  public function getTemplate() {
+  public function __toString() {
+    //pkdebug("InFormSet, elements:", $this->getElements(true));
+    if (empty($this->origArgs['create'])) {
+      $count = sizeof($this->subforms);
+      $create_label = "New Profile";
+      if (isset($this->origArgs['create_label'])) {
+        $create_label = $this->origArgs['create_label'];
+      }
+      $htmlel = new BaseElement(
+        array('input'=>'html', 'content'=> 
+        "<div class='pkmvc-button new-from-formset-tpl' data-count='$count'>$create_label</div>",
+              ));
+      $this->addElement('create', $htmlel);
+    } 
+    return parent::__toString();
+  }
+
+  public function getJSTemplate() {
     $template = $this->base_form->copy();
     //$template->addNameSegment(static::TPL_STR);
     return $template;
@@ -875,7 +924,7 @@ class FormSet extends SubForm {
 
 
   public function additionalClassAttributes() {
-    $template = $this->getTemplate();
+    $template = $this->getJSTemplate();
     return "data-template='".html_encode($template)."'";
   }
 

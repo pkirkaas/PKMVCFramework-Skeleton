@@ -126,13 +126,13 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * @param string $content
    */
   protected function setContent($content) {
-    if ($this->input == 'textarea') {
+    //if ($this->input == 'textarea' ) {
       $this->otherAttributes['content'] = $content;
-    }
-    else {
-      $content = static::clean($content);
-      $this->attributes['value'] = $content;
-    }
+    //}
+    //else {
+    //  $content = static::clean($content);
+    //  $this->attributes['value'] = $content;
+    //}
     $this->content = $content;
   }
 

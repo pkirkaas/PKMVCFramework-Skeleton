@@ -133,14 +133,14 @@ class UserController extends AppController {
       'lname'=>array('label'=>'Last Name', 'name_segment'=>'lname',
           'placeholder'=>'Your Last Name', ),
       'profiles'=>array('input'=>'formset','subform'=>'profiles',
-        'name_segment'=>'profiles', 'class'=> 'doggy',
+        'name_segment'=>'profiles', 'class'=> 'doggy','create_label'=>'Create',
         'elements'=> array(
           'profile_description'=>array('name_segment'=>'profile_description', 
               'data-stuff'=>'fromUserController', 'label' => 'Prof Desc',
               'placeholder'=>"Describe your profile", ),
           'profile_name'=>array('type'=>'text', 'name_segment'=>'profile_name',
-              'data-stuff'=>'fromUserController', 'label'=>'Prof Blah',
-              'placeholder'=>"Describe your Blah", )
+              'data-stuff'=>'fromUserController', 'label'=>'Prof Name',
+              'placeholder'=>"Profile Name of Blue Blazer", )
                   ),
           ),
         );

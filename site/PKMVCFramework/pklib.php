@@ -546,7 +546,7 @@ function html_decode($str) {
  * @return Array: Array with value set at appropriate vector. If called with
  * $retar = &insert_into_array(.... $arr);, $retar will be a reference to $arr
  */
-function &insert_into_array( $keys, $value,& $arr = null) {
+function &insert_into_array(Array $keys, $value,& $arr = null) {
   if ($arr === null) {
     $arr = array();
   }
@@ -568,7 +568,8 @@ function &insert_into_array( $keys, $value,& $arr = null) {
  * @return boolean: True if array key chain is set, else false
  */
 //function array_key_exists_depth(Array $keys, Array $arr) {
-function array_keys_exist(Array $keys, Array $arr) {
+function array_keys_exist(Array $keys, Array $arr = null) {
+  if (!$arr) return false;
   foreach ($keys as $keyval) {
     if (!is_array($arr) || ! array_key_exists($keyval, $arr)) {
       return false;
