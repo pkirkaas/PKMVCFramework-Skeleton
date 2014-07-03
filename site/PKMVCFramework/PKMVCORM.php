@@ -1752,8 +1752,24 @@ class BaseModel extends PKMVCBase  implements ArrayAccess {
 //    $this->container = $data;
   }
 
+/**
+ * Implementation for ArrayAccess interface. Currently, only one-dimensional...
+ * @param string|int $offset: The key to check against
+ * @return boolean
+ */
   public function offsetExists ( $offset ) {
-    return true;
+    $directVars = $this->getDirectVars();  
+    if (in_array($offset, array_keys($directVars))) {
+      return true;
+    }
+    #Check if a "member object"; if so, instantiate it and return it...
+    if (in_array($offset, array_keys(static::getMemberObjects()))) { //it's a member object'
+      return true;
+    }
+    if (in_array($offset, array_keys(static::getMemberCollections()))) { //it's a member object'
+      return true;
+    }
+    return false;
   }
   public function &offsetGet ($offset) {
    // echo "<h4>Start: OFFSET_get:</h4>";
@@ -1778,15 +1794,29 @@ class BaseModel extends PKMVCBase  implements ArrayAccess {
     #First, check if it is a direct member variable, if so, return the value
     $directVars = $this->getDirectVars();  
     if (in_array($offset, array_keys($directVars))) {
-      return $directVars[$offset];
+      $myOffset = $directVars[$offset];
+      return $myOffset;
+      //return $directVars[$offset];
     }
     #Check if a "member object"; if so, instantiate it and return it...
     if (in_array($offset, array_keys(static::getMemberObjects()))) { //it's a member object'
-      return $this->{"get$offset"}();
+      $myOffset = $this->{"get$offset"}();
+      return $myOffset;
+      //return $this->$offset;
+      //return $this->{"get$offset"}();
     }
     if (in_array($offset, array_keys(static::getMemberCollections()))) { //it's a member object'
-      return $this->{"get$offset"}();
+      $myOffset = $this->{"get$offset"}();
+      return $myOffset;
+      //return $this->$offset;
+      //return $this->{"get$offset"}();
     }
+    $myOffset = false;
+    pkdebug("No Hits: Offset:", $offset);
+    return $myOffset;
+    /*
+     * 
+     */
   }
 
   /**

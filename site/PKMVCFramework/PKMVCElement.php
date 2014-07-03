@@ -25,6 +25,10 @@ namespace PKMVC;
 interface ElementInterface {
   public function __toString();
   public function bind($arg = null);
+  /** Bind data to the form or element
+   * @param: Data to bind (array or Object), or empty for default object
+   */
+  public function bindTo($data = null);
   public function setValues(Array $args = array(),
           $exclusions = array(), $useDefaults = true);
   public function getName();
@@ -685,6 +689,16 @@ class BaseElement extends BaseFormComponent {
     }
   }
 
+  /**
+   * Bind the data to the form element/input. The parameter is the full data
+   * array/object, not just the local data item.
+   * @param type $src
+   */
+  public function bindTo($src = null) {
+    $name_segments = $this->getNameSegments();
+    $data = array_keys_value($name_segments, $src);
+    $this->setContent($data);
+  }
 
   public function bind($arg = null) {
     parent::bind($arg);
@@ -888,6 +902,3 @@ class BaseElement extends BaseFormComponent {
   }
 }
 
-class BaseDbElement extends BaseElement {
-  
-}

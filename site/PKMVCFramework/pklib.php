@@ -574,6 +574,24 @@ function array_keys_exist(Array $keys, Array $arr = null) {
     if (!is_array($arr) || ! array_key_exists($keyval, $arr)) {
       return false;
     }
+    $arr = $arr[$keyval];
   }
   return true;
+}
+
+/** Similar to above (array_keys_exist()), only returns the value at the 
+ * location
+ * @param array $keys
+ * @param array $arr
+ * @return mixed: The value at the location
+ */
+function array_keys_value(Array $keys, Array $arr = null) {
+  if (!$arr) return false;
+  foreach ($keys as $keyval) {
+    if (!is_array($arr) || ! array_key_exists($keyval, $arr)) {
+      return false;
+    }
+    $arr = $arr[$keyval];
+  }
+  return $arr;
 }

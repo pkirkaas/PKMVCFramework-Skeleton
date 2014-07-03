@@ -305,11 +305,11 @@ class RenderResult {
 
   public function __toString() {
     try {
-    if (!$this->viewRenderer instanceOf ViewRenderer) {
-      $this->viewRenderer = new ViewRenderer();
-      //return $this->viewRenderer($this->result, $this->template);
-      return $this->viewRenderer->render($this->result, $this->template);
-    }
+      if (!$this->viewRenderer instanceOf ViewRenderer) {
+        $this->viewRenderer = new ViewRenderer();
+        //return $this->viewRenderer($this->result, $this->template);
+        return $this->viewRenderer->render($this->result, $this->template);
+      }
     } catch (\Exception $e) {
       pkdebug("Exception:", $e);
       $stack = \pkstack_base();
