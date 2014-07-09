@@ -31,10 +31,12 @@ namespace PKMVC;
 <h3>THIS CLASS IS::: [<?=$class?>]</h3>
 <?=BaseController::getSlot('top-menu')?>
 <h1>This is the Layout!</h1>
+<?//=BaseController::renderSlot('debug', 'slot debug')?>
 
 <div class='main-content'>
 <?=$content?>
 </div> <!-- close div main-content -->
+<?=BaseController::renderSlot('debug', 'slot debug')?>
 
 </div> <!-- close div main-body -->
 <?=static::getJs();?>

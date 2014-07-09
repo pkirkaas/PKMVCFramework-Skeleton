@@ -24,7 +24,6 @@ namespace PKMVC;
  */
 interface ElementInterface {
   public function __toString();
-  public function bind($arg = null);
   /** Bind data to the form or element
    * @param: Data to bind (array or Object), or empty for default object
    */
@@ -130,6 +129,8 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * @param string $content
    */
   protected function setContent($content) {
+    //DEBUG
+    //$content = "Dinosaur!";
     //if ($this->input == 'textarea' ) {
       $this->otherAttributes['content'] = $content;
     //}
@@ -138,18 +139,9 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     //  $this->attributes['value'] = $content;
     //}
     $this->content = $content;
+    tmpdbg("NEW CONTENT FOR element [{$this->name}] is: [{$this->content}]");
   }
 
-  /**
-   * Here, does nothing but save the bind data. Subclasses do the work.
-   * @param mixed $arg: Data to bind to form/element
-   */
-  public function bind($arg = null) {
-    if ($arg) {
-      $this->bind_data = $arg;
-    }
-    $this->setContent($arg);
-  }
 
   protected function getContent() {
     return $this->content;
@@ -409,6 +401,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
       $this->addNameSegment('');
     }
     
+    //tmpdbg("This:", $this);
 
 
 
@@ -483,17 +476,9 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * like: " name='aname' class='aclass' ... "
    */
   public function makeAttrStr($defaults = array(), $exclusions = array()) {
-
-    //$attrStr = " name='".$this->getName()."' ";
     $attrStr = " name='".$this->getName()."' ";
     $attributes = $this->getAttributes();
     foreach ($defaults as $key => $value) {
-      /*
-      if ($key == 'name') {
-        continue;
-      }
-       * 
-       */
       if (!in_array($key, array_keys($attributes))) {
         $attributes[$key] = $value;
       }
@@ -697,6 +682,8 @@ class BaseElement extends BaseFormComponent {
   public function bindTo($src = null) {
     $name_segments = $this->getNameSegments();
     $data = array_keys_value($name_segments, $src);
+    //pkdebug("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
+    tmpdbg("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
     $this->setContent($data);
   }
 
@@ -748,51 +735,6 @@ class BaseElement extends BaseFormComponent {
     } else if ($input === 'boolean') { #Custum control implemented with two inputs
       //$ret[] = static::makeBooleanInput($this->attributes);
       $ret[] = $this->makeBooleanInput();
-
-
-
-
-      /*
-    } else if ($input === 'subform') { #Just echo the subform, or build it ...
-      $val = '';
-      if (isset($this->otherAttributes['content'])) {
-        $content=$this->otherAttributes['content'];
-        if (is_string($content) || ($content instanceOf BaseForm)) {
-          $val = $content;
-        } else if (is_array($content)) { #Enhancement: use 'type' for 
-          $content['subform'] = true;
-          $val = new BaseForm($content); #in case descendent of BaseForm
-        } else { #Not valid
-          $subformType = typeOf($content);
-          throw new \Exception("Invalid subform arg type: [$subformType]");
-        }
-
-      } else { #Create the subform with the original arguments to this El...
-        $args = $this->origArgs;
-        $args['subform'] = true;
-        if (isset($args['scrolling'])) {
-          $val = new FormSet($args);
-        } else {
-          $val = new BaseForm($args);
-        }
-      } 
-      #Let's have fun and implement some more functionality. If 'type' is set
-      #and == 'fieldset', wrap the subform in the fieldset tag, and apply all
-      #the attributes, like 'class', etc...
-      if ($type == 'fieldset') {
-        $ret = new PartialSet();
-        $ret[] = "\n<fieldset $attrStr >\n";
-        $ret[] = $val;
-        $ret[] = "\n</fieldset>\n";
-      } else {
-        $ret[]= $val;
-      }
-       * 
-       */
-
-
-
-
     } else if ($input === 'select') { #Build the select...
       $ret[] = $this->makePicker();
     } else if ($input === 'html') { #Convenience, just echo without question...
@@ -805,13 +747,14 @@ class BaseElement extends BaseFormComponent {
       } 
       $ret[] = $val;
     } else { #Not a special type, make a regular input of the type..
-      $ret[] = "\n<$input type='$type' $attrStr />";
+      $ret[] = "\n<$input type='$type' value='{$this->content}' $attrStr />";
     }
     if ($labelCtl) {
       $ret[] = "\n</div>\n";
     } else {
       $ret[] = "\n";
     }
+    tmpdbg("THIS NAME:", $this->name,"CONTENT:", $this->content);
     return $ret;
   }
 

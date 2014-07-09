@@ -61,3 +61,14 @@ fieldset {
   background-color: #fec;
 
 }
+
+.slot.debug {
+  font-family: "Courier New", monospace;
+  white-space: pre-wrap;
+  border: solid #aaa 1px;
+  border-radius: 5px;
+  margin: 5px;
+  padding: 5px;
+  background-color: #ffd;
+
+}

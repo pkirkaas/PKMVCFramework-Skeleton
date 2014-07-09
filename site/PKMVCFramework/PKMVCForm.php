@@ -456,14 +456,14 @@ class BaseForm extends BaseFormComponent {
       trigger_error($msg);
       die();
     }
-    pkdebug("BindingTo:",$data);
+    //pkdebug("BindingTo:",$data);
+    tmpdbg("BindingTo:",$data);
     #Okay, we have a src, iterate and bind. Elements are all either input
     #elements or subforms/formsets
-    $elements = $this->getElements();
+    $elements = $this->getElements(true);
     foreach ($elements as $element) {
       $element->bindTo($data);
     }
-
   }
 
 

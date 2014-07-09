@@ -102,12 +102,17 @@ class BaseController {
    * in any view. For example, a menu that appears above the controller/action
    * view, but should be created by the controller.
    * 
+   * NOTE: If you populate a slot in a toString method (for debugging, say), and
+   * display slots before the rendered content, the slot will be output before
+   * it is filled by the content toString method, and so won't appear... 
+   * 
    * @param array $keys: An indexed array of key names, to arbitrary depth, used
    * to index the array of slots. Like, array('controllername', 'submenu'). But
    * typically, only like "array('menu');", in which case the $keys arg can be
    * just the key string, eg: 'menu'.
   
-   * @param String $val: The HTML string to put in the slot
+   * @param String|toStringable $val: The HTML string or object with toString
+   * method, to put in the slot
    */
   public static function setSlot($keys, $val = null) {
     if (is_string($keys)) {
@@ -119,8 +124,83 @@ class BaseController {
     //$subarr = &static::$slots;
     #Recursive function to fill the array to appropriate depth..
     //static::fillArray($subarr,$keys,$val);
-    insert_into_array($keys,$val,static::$slots);
+    $slotval = new PartialSet();
+    $slotval[] = $val;
+    insert_into_array($keys,$slotval,static::$slots);
   }
+
+  /** Like setSlot (above), but adds a value without overwriting. 
+   * Uses a Partial Set, to allow objects to be gathered without evaluating
+   * until rendering.
+   * @param type $keys
+   * @param type $val
+   * @throws \Exception
+   */
+  public static function addSlot ($keys, $val = null) {
+    if (is_string($keys)) {
+      $keys = array($keys);
+    }
+
+    if (!is_array($keys)) { #That's weird...
+      throw new \Exception("Bad key value");
+    }
+    //$subarr = &static::$slots;
+    #Recursive function to fill the array to appropriate depth..
+    //static::fillArray($subarr,$keys,$val);
+    $slotContent = static::getSlot($keys);
+    if ($slotContent instanceOf PartialSet) {
+      $slotval = $slotContent;
+    } else {
+      $slotval = new PartialSet();
+      if ($slotContent) {
+        $slotval[] = $slotContent;
+      }
+    }
+    $slotval[] = $val;
+    insert_into_array($keys,$slotval,static::$slots);
+  }
+  /** Retrieves the value at the end of the key chain. If not
+   * set, returns null. Do same here as set -- call recursive function...
+   * @param array $keys: Sequential indexed array of key names, or string
+   */
+  public static function getSlot($keys) {
+    if (is_string($keys)) {
+      $keys = array($keys);
+    }
+    if (!is_array($keys)) { #That's weird...
+      throw new \Exception("Bad key value");
+    }
+    $slotArr = static::$slots;
+    $val = static::getArrayDepth($slotArr, $keys);
+    return $val;
+  }
+
+  public static function renderSlot($keys, $class = "slot") {
+    $res = static::getSlot($keys);
+    if (!$res || !sizeof($res)) {
+      return null;
+    }
+    return "<div class='$class'>$res</div>\n";
+  }
+
+  public static function getArrayDepth($slotArr, $keys) {
+    if (empty($keys) || !sizeof($keys)) { #Shouldn't be here
+      throw new \Exception("Empty Keys array");
+    }
+    $key = array_shift($keys);
+    if (!isset($slotArr[$key])) { //Not set, done, return null;
+      return null;
+    }
+    if (empty($keys) || !sizeOf($keys)) { #Hit bottom
+      if (isset($slotArr[$key])) { 
+        return $slotArr[$key];
+      } else {
+        return null;
+      }
+    } #keep trying...
+    return static::getArrayDepth($slotArr[$key],$keys);
+  }
+
 
   /**
    * Redirect to the specified route or none - optionally, pass on GET params
@@ -164,40 +244,6 @@ class BaseController {
     header("Location: $redirectUrl");
     return;
   }
-  /** Retrieves the value at the end of the key chain. If not
-   * set, returns null. Do same here as set -- call recursive function...
-   * @param array $keys: Sequential indexed array of key names, or string
-   */
-  public static function getSlot($keys) {
-    if (is_string($keys)) {
-      $keys = array($keys);
-    }
-    if (!is_array($keys)) { #That's weird...
-      throw new \Exception("Bad key value");
-    }
-    $slotArr = static::$slots;
-    $val = static::getArrayDepth($slotArr, $keys);
-    return $val;
-  }
-
-  public static function getArrayDepth($slotArr, $keys) {
-    if (empty($keys) || !sizeof($keys)) { #Shouldn't be here
-      throw new \Exception("Empty Keys array");
-    }
-    $key = array_shift($keys);
-    if (!isset($slotArr[$key])) { //Not set, done, return null;
-      return null;
-    }
-    if (empty($keys) || !sizeOf($keys)) { #Hit bottom
-      if (isset($slotArr[$key])) { 
-        return $slotArr[$key];
-      } else {
-        return null;
-      }
-    } #keep trying...
-    return static::getArrayDepth($slotArr[$key],$keys);
-  }
-
   public static function getLayout() {
     return static::$layout;
   }

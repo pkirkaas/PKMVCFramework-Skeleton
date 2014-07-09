@@ -29,6 +29,7 @@ $default_menu[] = array('route' => array('user','play'), 'label' => 'Play', 'log
 //$default_menu[] = array('route' => array('user','account'), 'label' => 'Account', 'logtype' => 1, 'title' => "Manage your Account settings");
 $default_menu[] = array('route' => array('user','edit'), 'label' => 'Edit', 'logtype' => 1, 'title' => "Edit your Profiles");
 $default_menu[] = array('route' => array('user','logout'), 'label' => 'Logout', 'logtype' => 1, 'title' => 'Log out of your account');
+$default_menu[] = array('route' => array('test','index'), 'label' => 'Test...', 'logtype' => 0, 'title' => 'Test Something');
 $default_menu[] = array('route' => array('admin','sql'), 'label' => 'SQL Out', 'logtype' => 0, 'title' => 'Get SQL Suggestions');
 
 $config = array();

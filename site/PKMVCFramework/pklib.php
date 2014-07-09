@@ -46,6 +46,11 @@ function pkecho() {
   echo "<pre>$out</pre>";
 }
 
+function tmpdbg() {
+  $args = func_get_args();
+  PKMVC\BaseController::addSlot('debug', call_user_func_array("pkdebug_base", $args));
+}
+
 function pkdebug() {
   $args = func_get_args();
   $out = call_user_func_array("pkdebug_base", $args);
@@ -64,7 +69,7 @@ function pkdebug_base() {
   //$frame = $stack[0];
   //$frame = $stack[1];
   //$out = "\n".date('j-M-y; H:i:s').': '.$frame['file'].": ".$frame['function'].': '.$frame['line'].": \n  ";
-  $out = "PKDEBUG OUT: STACKSIZE: $stacksize\n";
+  $out = "\nPKDEBUG OUT: STACKSIZE: $stacksize\n";
   /*
     if (!isset($frame['file']) || !isset($frame['line'])) {
     $out.="\n\nStack Frame; no 'file': ";
@@ -568,15 +573,20 @@ function &insert_into_array(Array $keys, $value,& $arr = null) {
  * @return boolean: True if array key chain is set, else false
  */
 //function array_key_exists_depth(Array $keys, Array $arr) {
-function array_keys_exist(Array $keys, Array $arr = null) {
+function array_keys_exist(Array $keys,  $arr = null) {
   if (!$arr) return false;
+  if (!is_array_accessable($arr)) return false;
   foreach ($keys as $keyval) {
-    if (!is_array($arr) || ! array_key_exists($keyval, $arr)) {
+    if (!is_array_accessable($arr) || ! arrayable_key_exists($keyval, $arr)) {
       return false;
     }
     $arr = $arr[$keyval];
   }
   return true;
+}
+
+function is_array_accessable($arg) {
+  return (is_array($arg) || ($arg instanceOf ArrayAccess));
 }
 
 /** Similar to above (array_keys_exist()), only returns the value at the 
@@ -585,13 +595,27 @@ function array_keys_exist(Array $keys, Array $arr = null) {
  * @param array $arr
  * @return mixed: The value at the location
  */
-function array_keys_value(Array $keys, Array $arr = null) {
+function array_keys_value(Array $keys, $arr = null) {
   if (!$arr) return false;
+  if (!is_array_accessable($arr)) return false;
   foreach ($keys as $keyval) {
-    if (!is_array($arr) || ! array_key_exists($keyval, $arr)) {
+    if (!is_array_accessable($arr) || ! arrayable_key_exists($keyval, $arr)) {
       return false;
     }
     $arr = $arr[$keyval];
   }
   return $arr;
+}
+
+/**
+ * Like the system "array_key_exists", except for ArrayAccess implementation
+ * as well.
+ * @param int|str $keyval
+ * @param array|ArrayAccess $arr
+ * @return boolean: True if key exists, else false
+ */
+function arrayable_key_exists($keyval, $arr) {
+  if (is_array($arr)) return array_key_exists($keyval, $arr);
+  if ($arr instanceOf ArrayAccess) return $arr->offsetExists($keyval);
+  throw new Exception ("Argument (2) to arrayable_key_exists is not arrayable");
 }

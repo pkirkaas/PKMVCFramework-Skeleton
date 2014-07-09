@@ -21,6 +21,7 @@ class User extends BaseUser {
       'lname'=>array('dbtype'=>'varchar', 'eltype'=>'text',)
       ); #Will be added to base directs
       */
+
   protected static $memberCollections = array(
       'profiles'=>array('classname'=>'Profile', 'foreignkey'=>'user_id')); #Array of names of object collections
   #directs
