@@ -124,6 +124,25 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     $this->setValues($args);
   }
 
+  public function replaceTemplateKey($key) {
+    //tmpdbg("Replacing [$key]");
+    $nameSegments = $this->getNameSegments();
+    $templateKey = array_search(static::TPL_STR, $nameSegments); 
+    if ($templateKey) {
+      $nameSegments[$templateKey] = $key;
+    //$subfrm->addNameSegment($i);
+      $this->setName($nameSegments);
+    }
+    if ($this instanceOf BaseForm) { #Replace any suform template keys
+      $elements = $this->getElementsProto();
+      
+      foreach ($elements as $element) {
+        $element->replaceTemplateKey($key);
+      }
+    }
+
+  }
+
   /**
    * Has to also figure out whether to set the $this->attributes['value'] or
    * $this->otherAttributes['content'];
@@ -390,16 +409,18 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
       return $this;
     }
     $this->origArgs = $args; #Let's keep all the original args, in case...
-    if (!empty($args['name'])) {
-      $this->setName($args['name']);
-    } else if (!empty($args['name_segments'])) {
-      $this->setName($args['name_segments']);
-    }
-    if (!empty($args['name_segment'])) {
-      $this->addNameSegment($args['name_segment']);
-    }
-    if (!empty($args['scrolling'])) {
-      $this->addNameSegment('');
+    if (!$this->getName()) {
+      if (!empty($args['name'])) {
+        $this->setName($args['name']);
+      } else if (!empty($args['name_segments'])) {
+        $this->setName($args['name_segments']);
+      }
+      if (!empty($args['name_segment'])) {
+        $this->addNameSegment($args['name_segment']);
+      }
+      if (!empty($args['scrolling'])) {
+        $this->addNameSegment('');
+      }
     }
     
     //tmpdbg("This:", $this);

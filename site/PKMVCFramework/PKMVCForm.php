@@ -488,7 +488,7 @@ class BaseForm extends BaseFormComponent {
       die();
     }
     $elements = $this->getElementsInst();
-    foreach ($elements as $element) {
+    foreach ($elements as &$element) {
       $element->bind($data);
     }
     return;
@@ -540,6 +540,12 @@ class BaseForm extends BaseFormComponent {
 
   public function bindTo($src = null) {
     return $this->bind($src);
+
+
+
+
+
+
     $data = array();
     if (!$src ) { //|| ($arg instanceOf BaseModel)) {
       $baseObject =  $this->getBaseObject();
@@ -594,18 +600,16 @@ class BaseForm extends BaseFormComponent {
     $this->elements_inst = new PartialSet();
     $this->elements_prot = new PartialSet();
     parent::__construct($args);
-    if (!$args) {
-      return;
-    }
     #Set defaults if not set -- id field and submit button
 
     #Add default elements (hidden iD, Submit) if this is a top-level form
     #and if default elemments not specifically given or set to null...
     if (get_class($this) == get_class()) {#Called from BaseForm, not subclass
-      $idEl = $this->getElementProto('id', true); #Get the prototype element
+      $idEl = $this->getElementProto('id'); #Get the prototype element
       #If don't want default, set explicitly to null. Else, if undefined,
       #returns strict boolean false
       if ($idEl === false) {
+        //tmpdbg("Create ID EL");
         $className = $this->name;
         $id = '';
         if ($this->base_object) {
@@ -629,8 +633,9 @@ class BaseForm extends BaseFormComponent {
             'value' => 'Submit',
             'class' => 'submit button',
         ));
-        $this->setElementProto('submit', $submitEl,true);
+        $this->setElementProto('submit', $submitEl);
       }
+      //tmpdbg("ID ELEMENT:", $this->getElementProto('id'));
       //$this->bind();
     }
   }
@@ -895,7 +900,7 @@ public function makeCollectionSubform(Array $params) {
       #No template, no renderResult - output default, which is all elements  
       #BUT -- if it is topLevel form, output open & close tags as well....
       //pkdebug("IN TOSTRING: PROTO ELEMENTS", $this->elements_prot);
-      $elements = $this->getElementsProto(true);
+      $elements = $this->getElementsInst();
       //pkdebug("IN TOSTRING: ELEMENTS", $elements);
       //pkdebug("In TOSTRING: Elements", $elements);
       return $this->openForm().$elements.$this->closeForm();
@@ -907,10 +912,10 @@ public function makeCollectionSubform(Array $params) {
     }
   }
 
-  public function getElementInst($elName, $proto = false) {
+  public function &getElementInst($elName, $proto = false) {
     return $this->getElementX($elName, $proto);
   }
-  public function getElementProto($elName, $proto = true) {
+  public function &getElementProto($elName, $proto = true) {
     return $this->getElementX($elName, $proto);
   }
 
@@ -919,13 +924,14 @@ public function makeCollectionSubform(Array $params) {
    * 
    * @param String $name
    */
-  public function getElementX($elName, $proto = false) {
+  public function &getElementX($elName, $proto = false) {
     $elements = $this->getElementsX($proto);
+    $retval = false;
     if (arrayish_key_exists($elName, $elements)) {
-      return $elements[$elName]; #Distinguish between explicitly set NULL and not set at all
-    } else {
-      return false;
-    }
+      $retval = $elements[$elName];
+    } 
+      //tmpdbg("Couldn't find [$elName] in Elements. Stack:", pkstack_base(5),"Elements:", $elements);
+    return $retval; #Distinguish between explicitly set NULL and not set at all
   }
 
 
@@ -1114,7 +1120,7 @@ class FormSet extends SubForm {
 
   public function __toString() {
     //pkdebug("InFormSet, elements:", $this->getElements(true));
-    tmpdbg("Sample base_form OBJ:", $this->base_form);
+    //tmpdbg("Sample base_form OBJ:", $this->base_form);
     if (empty($this->origArgs['create'])) {
       $count = sizeof($this->getElementsInst());
       $create_label = "New Profile";
@@ -1161,13 +1167,27 @@ class FormSet extends SubForm {
       $cnt = sizeOf($set);
       for ($i = 0 ; $i < $cnt ; $i ++ ) {
         $subfrm = $this->base_form->copy();
+        $subfrm->replaceTemplateKey($i);
+
+
+
+
+
+
+        /*
         $nameSegments = $this->getNameSegments();
+        $nameSegments = $subfrm->getNameSegments();
+        //tmpdbg("")
         $templateKey = array_search(static::TPL_STR, $nameSegments); 
         $nameSegments[$templateKey] = $i;
         //$subfrm->addNameSegment($i);
         $subfrm->setName($nameSegments);
+        //tmpdbg("Name Segments:", $nameSegments, "New Subform Name:", $subfrm);//->getName());
         //$subfrm->bindTo($set);
+        */
         $this->addElementProto($subfrm);
+        //$this->elements_prot[] = $subfrm;
+        //$this->elements_inst[99] = $subfrm;
         //$protoElements[] = 
         /*
         $subfrm = $this->base_form->copy();
@@ -1181,6 +1201,8 @@ class FormSet extends SubForm {
          * 
          */
       }
+      //tmpdbg("Subform proto elements:", $this->getElementsProto());
+      //tmpdbg("Subform proto elements:", $this->elements_prot);
       return parent::bind($data);
     }
   }
@@ -1206,11 +1228,24 @@ class FormSet extends SubForm {
       $cnt = sizeOf($set);
       for ($i = 0 ; $i < $cnt ; $i ++ ) {
         $subfrm = $this->base_form->copy();
+
+
+
+        $subform->replaceTemplateKey($i);
+
+
+        /*
         $nameSegments = $subfrm->getNameSegments();
         $templateKey = array_search(static::TPL_STR, $nameSegments); 
         $nameSegments[$templateKey] = $i;
         //$subfrm->addNameSegment($i);
         $subfrm->setName($nameSegments);
+         * 
+         */
+
+
+
+
         $subfrm->bindTo($set);
         $this->addElement($subfrm);
       }
