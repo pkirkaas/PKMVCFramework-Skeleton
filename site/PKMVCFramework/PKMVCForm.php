@@ -1200,6 +1200,7 @@ class FormSet extends SubForm {
         $this->addElement($subfrm);
          * 
          */
+        tmpdbg("Subfrm els:", $subfrm->getElementsProto());
       }
       //tmpdbg("Subform proto elements:", $this->getElementsProto());
       //tmpdbg("Subform proto elements:", $this->elements_prot);
