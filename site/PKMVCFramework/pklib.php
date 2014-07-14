@@ -69,7 +69,7 @@ function pkdebug_base() {
   //$frame = $stack[0];
   //$frame = $stack[1];
   //$out = "\n".date('j-M-y; H:i:s').': '.$frame['file'].": ".$frame['function'].': '.$frame['line'].": \n  ";
-  $out = "\nPKDEBUG OUT: STACKSIZE: $stacksize\n";
+  $out = "\nPKDEBUG OUT: STACKSIZE: $stacksize";
   /*
     if (!isset($frame['file']) || !isset($frame['line'])) {
     $out.="\n\nStack Frame; no 'file': ";
@@ -118,7 +118,7 @@ function pkdebug_base() {
       $msg = pkvardump($msg);
     $out .= ('Type: ' . $type . ($printMsg ? ': Payload: ' . $msg : '') . "\n  ");
   }
-  $out.="\nEND DEBUG OUT\n\n";
+  $out.="END DEBUG OUT\n\n";
   return $out;
 }
 
@@ -238,15 +238,28 @@ function appLogPath($path = null) {
   return $logpath;
 }
 
-//Outputs to the destination specified by $useDebugLog
-function pkdebugOut($str) {
+/** Outputs to the destination specified by $useDebugLog
+ * 
+ * @staticvar boolean $first
+ * @param type $str
+ * @param boolean $reset: Reset/truncate app log with each request? Default: 1
+ * @return boolean
+ * @throws Exception
+ */
+function pkdebugOut($str, $reset = true) {
+  static $first = true;
   if (true) {
   //  try {
       //$logpath = $_SERVER['DOCUMENT_ROOT'].'/../app/logs/app.log';
       //$logpath =  WP_CONTENT_DIR.'/app.log';
       //$logpath = $_SERVER['DOCUMENT_ROOT'] . '/logs/app.log';
       $logpath = appLogPath();
-      $fp = fopen($logpath, 'a+');
+      if ($first && $reset) {
+        $first = false;
+        $fp = fopen($logpath, 'w+');
+      } else {
+        $fp = fopen($logpath, 'a+');
+      }
       if (!$fp)
         throw new Exception("Failed to open DebugLog [$logpath] for writing");
       fwrite($fp, $str);
@@ -573,11 +586,11 @@ function &insert_into_array(Array $keys, $value,& $arr = null) {
  * @return boolean: True if array key chain is set, else false
  */
 //function array_key_exists_depth(Array $keys, Array $arr) {
-function array_keys_exist(Array $keys,  $arr = null) {
+function arrayish_keys_exist($keys,  $arr = null) {
   if (!$arr) return false;
-  if (!is_array_accessable($arr)) return false;
+  if (!is_arrayish($arr)) return false;
   foreach ($keys as $keyval) {
-    if (!is_array_accessable($arr) || ! arrayable_key_exists($keyval, $arr)) {
+    if (!is_arrayish($arr) || ! arrayish_key_exists($keyval, $arr)) {
       return false;
     }
     $arr = $arr[$keyval];
@@ -585,7 +598,7 @@ function array_keys_exist(Array $keys,  $arr = null) {
   return true;
 }
 
-function is_array_accessable($arg) {
+function is_arrayish($arg) {
   return (is_array($arg) || ($arg instanceOf ArrayAccess));
 }
 
@@ -595,11 +608,11 @@ function is_array_accessable($arg) {
  * @param array $arr
  * @return mixed: The value at the location
  */
-function array_keys_value(Array $keys, $arr = null) {
+function arrayish_keys_value(Array $keys, $arr = null) {
   if (!$arr) return false;
-  if (!is_array_accessable($arr)) return false;
+  if (!is_arrayish($arr)) return false;
   foreach ($keys as $keyval) {
-    if (!is_array_accessable($arr) || ! arrayable_key_exists($keyval, $arr)) {
+    if (!is_arrayish($arr) || ! arrayish_key_exists($keyval, $arr)) {
       return false;
     }
     $arr = $arr[$keyval];
@@ -614,8 +627,56 @@ function array_keys_value(Array $keys, $arr = null) {
  * @param array|ArrayAccess $arr
  * @return boolean: True if key exists, else false
  */
-function arrayable_key_exists($keyval, $arr) {
+function arrayish_key_exists($keyval, $arr) {
   if (is_array($arr)) return array_key_exists($keyval, $arr);
   if ($arr instanceOf ArrayAccess) return $arr->offsetExists($keyval);
-  throw new Exception ("Argument (2) to arrayable_key_exists is not arrayable");
+  throw new Exception ("Argument (2) to arrayish_key_exists is not arrayable");
+}
+
+/**
+ * Returns Max int key index for array with mixed assoc/idx keys (or Max + 1
+ * if $next == true). 
+ * @param array $arr: The array to find max int key of
+ * @param boolean $next: If true, returns max+1; or 0 if no int keys.
+ * @return null|int: Max int key index in array with mixed assoc/idx keys
+ */
+
+function max_idx($arr, $next=false) {
+  if (!$arr || !sizeOf($arr)) {
+    if ($next) return 0;
+    return null;
+  }
+
+  $ret = null;
+  $keys = arrayish_keys($arr);
+  foreach ($keys as $key) {
+    if (is_int($key)) {
+      if (($ret === null) || ($key > $res)) {
+        $ret = $key;
+      }
+    }
+  }
+  if ($next) {
+    if ($ret === null) return 0;
+    return $ret + 1;
+  }
+  return $ret;
+}
+ 
+
+function arrayish_keys($arr) {
+  /*
+  if (!is_array($arr) && !($arr instanceOf Iterator)) {
+    throw new Exception ("Uniterable Arg");
+  }
+   * 
+   */
+  if (!sizeOf($arr)) {
+    return array();
+  }
+  $keys = array();
+  foreach ($arr as $key => $val) {
+    $keys[] = $key;
+  }
+  return $keys;
 }

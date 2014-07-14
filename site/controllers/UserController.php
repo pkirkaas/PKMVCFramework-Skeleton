@@ -147,7 +147,7 @@ class UserController extends AppController {
     $formArgs = array('base_object'=>$user, 'elements'=>$formElements,
         'name_segment'=>'user');
     $form = new BaseForm($formArgs);
-  $form->bindTo($user);
+  $form->bind($user);
     $data['form'] = $form;
     return $data;
   }

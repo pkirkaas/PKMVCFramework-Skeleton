@@ -28,6 +28,7 @@ interface ElementInterface {
    * @param: Data to bind (array or Object), or empty for default object
    */
   public function bindTo($data = null);
+  public function bind($data = null);
   public function setValues(Array $args = array(),
           $exclusions = array(), $useDefaults = true);
   public function getName();
@@ -139,7 +140,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     //  $this->attributes['value'] = $content;
     //}
     $this->content = $content;
-    tmpdbg("NEW CONTENT FOR element [{$this->name}] is: [{$this->content}]");
+    //tmpdbg("NEW CONTENT FOR element [{$this->name}] is: [{$this->content}]");
   }
 
 
@@ -681,15 +682,19 @@ class BaseElement extends BaseFormComponent {
    */
   public function bindTo($src = null) {
     $name_segments = $this->getNameSegments();
-    $data = array_keys_value($name_segments, $src);
+    $data = arrayish_keys_value($name_segments, $src);
     //pkdebug("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
-    tmpdbg("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
+    //tmpdbg("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
     $this->setContent($data);
   }
 
   public function bind($arg = null) {
+    return $this->bindTo($arg);
+    /*
     parent::bind($arg);
     $this->setContent($arg);
+     * 
+     */
   }
 
   public function getInputStr() {
@@ -754,9 +759,10 @@ class BaseElement extends BaseFormComponent {
     } else {
       $ret[] = "\n";
     }
-    tmpdbg("THIS NAME:", $this->name,"CONTENT:", $this->content);
+    //tmpdbg("THIS NAME:", $this->name,"CONTENT:", $this->content);
     return $ret;
   }
+
 
   /**
    * ##!! PULLED FROM PKMVCForm!!

@@ -354,9 +354,15 @@ class BaseModel extends PKMVCBase  implements ArrayAccess {
     if ($this->traversed) {
       $this->traversed = false;
       $collections = $this->getCollections();
-      foreach ($collections as $collection) {
-        foreach ($collection as $item) {
-          $item->untraverse();
+      if ($collections && is_array($collections)) {
+        pkdebug("ColLECTIONs:", $collections);
+        foreach ($collections as $collection) {
+          pkdebug("ColLECTION:", $collection);
+          if ($collection && is_array($collection)) {
+            foreach ($collection as $item) {
+              $item->untraverse();
+            }
+          }
         }
       }
     }
