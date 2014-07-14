@@ -107,19 +107,6 @@ class BaseForm extends BaseFormComponent {
    */
   protected $bound = false;
   protected $el_tag = "form";
-
-  /**
-   * @var String: The various form attributes and their defaults...
-   */
-  /*
-  protected $action = '';
-  protected $enctype = 'multipart/form-data';
-  protected $method = 'POST';
-  protected $name = '';
-  protected $class = '';
-  protected $id = '';
-   * 
-   */
   protected static $classDefaultAttributes = array(
       'enctype'=>'multipart/form-data',
       'method' => 'POST',
@@ -357,50 +344,6 @@ class BaseForm extends BaseFormComponent {
       }
       $this->addElementProto($elements);
 
-
-      /*
-      $elements = $args['elements']; 
-      foreach ($elements as $key => $value) { 
-        #if ($key == 'name') {
-        #} else 
-        #if ($value instanceOf BaseFormComponent) {
-        #  $this->elements[$key] = $value;
-        #} else 
-         if (is_array($value)) {
-          $name_segments = $this->name_segments;
-          $name_segments[] = $this->name_segment;
-          $value['name_segments'] = $name_segments;
-          if (isset($value['subform'])) {#Making a subform
-            if (is_string($value['subform'])) {#A collection property
-              $collectionName = $value['subform'];
-              $obj = $args['base_object'];
-              $objMemberCollections = $obj->getMemberCollections();
-              $collectionAttr = $objMemberCollections[$collectionName];
-              $value['name_segment'] = $collectionName;
-
-              $value['name_segments'][] = $this->name_segment;
-              $value['elements'][]=array('type'=>'hidden',
-                  'name_segment'=>$collectionAttr['foreignkey'],
-                  'base_model'=>$collectionAttr['classname'],
-                  );
-
-              //$value['elements'][];
-            }
-            if (isset($value['scrolling'])) {
-              $this->elements[$key] = new FormSet($value);
-            } else { #Just a subform, no collection? What's the point?
-              $this->elements[$key] = new BaseForm($value, true);
-            }
-          } else {
-            $this->elements[$key] = new BaseElement($value);
-          }
-        } else { #Bad element value
-          $elType = typeOf($value);
-          throw new \Exception("Invalid el type: [$elType] for key: [$key]'");
-        }
-      }
-*/
-
     }
     return $this;
   }
@@ -435,9 +378,6 @@ class BaseForm extends BaseFormComponent {
         insert_into_array($keyarr, $element, $retels);
       }
     }
-    //pkdebug("RETELS:::", $retels);
-    //$retarr = insert_into_array($baseKeys, $retels); 
-    //pkdebug("RETARR:::", $retarr);
     return $retels;
   }
 
@@ -488,99 +428,12 @@ class BaseForm extends BaseFormComponent {
       die();
     }
     $elements = $this->getElementsInst();
-    foreach ($elements as &$element) {
+    foreach ($elements as $key => &$element) {
       $element->bind($data);
     }
     return;
-    throw new Exception ("Shouldn't be here");
-    //OLD:
-    
-    //return;
-    /*
-    if (get_class($this) == "PKMVC\\BaseForm") {
-      pkdebug("THIS ELEMENTS_PROT:", $this->elements_prot, "THIS ELEMENTS_INST:", $this->elements_inst);
-    } else {
-      pkdebug("Class of this: [".get_class($this)."]");
-    }
-     * 
-     */
-    $data = array();
-    if (!$arg ) { //|| ($arg instanceOf BaseModel)) {
-      $baseObject =  $this->getBaseObject();
-      if (! ($baseObject instanceOf BaseModel)) {
-        pkdebug("Nothing to bind!");
-        return;
-      }
-      $base_name = $baseObject->getTableName();
-      $data[$base_name] = $baseObject;
-    } else if ($arg instanceOf BaseModel) {
-      $base_name = $arg->getTableName();
-      $data[$base_name] = $arg;
-    } else if (is_array($arg)) {
-      $data = $arg;
-    } else if (is_a($arg, BaseModel, true )) {#$arg name of BaseModel Sublclass
-      $emptyObj = new $arg();
-      $base_name = $emptyObj->getTableName();
-      $data[$base_name] = $emptyObj; // ->getArrayCopy(); 
-    } else {
-      $msg = "Bad arg to bind: [".print_r($arg, true).']';
-      // (Wait until to string can throw errors...
-      // throw new \Exception("Bad arg to bind: [".print_r($arg, true).']');
-      pkdebug("ERROR!!!! [$msg]");
-      trigger_error($msg);
-    }
-    $this->bind_data = $data;
-    #Data should now be an appropriate associative array of values
-    $elements = $this->getElements();
-    $elArr = $this->asArray();
-    //pkdebug("About to recursive bind; ElArr:", $elArr);
-    $this->bindRecursive($elArr, $data);
-    //pkdebug("BOUND ELAR:", $this->getElements());
   }
 
-  public function bindTo($src = null) {
-    return $this->bind($src);
-
-
-
-
-
-
-    $data = array();
-    if (!$src ) { //|| ($arg instanceOf BaseModel)) {
-      $baseObject =  $this->getBaseObject();
-      if (! ($baseObject instanceOf BaseModel)) {
-        pkdebug("Nothing to bind!");
-        return;
-      }
-      $base_name = $baseObject->getTableName();
-      $data[$base_name] = $baseObject;
-    } else if ($src instanceOf BaseModel) {
-      $base_name = $src->getTableName();
-      $data[$base_name] = $src;
-    } else if (is_array($src)) {
-      $data = $src;
-    } else if (is_a($src, BaseModel, true )) {#$src name of BaseModel Sublclass
-      $emptyObj = new $src();
-      $base_name = $emptyObj->getTableName();
-      $data[$base_name] = $emptyObj; // ->getArrayCopy(); 
-    } else {
-      $msg = "Bad src to bind: [".print_r($src, true).']';
-      // (Wait until to string can throw errors...
-      // throw new \Exception("Bad src to bind: [".print_r($src, true).']');
-      pkdebug("ERROR!!!! [$msg]");
-      trigger_error($msg);
-      die();
-    }
-    //pkdebug("BindingTo:",$data);
-    //tmpdbg("BindingTo:",$data);
-    #Okay, we have a src, iterate and bind. Elements are all either input
-    #elements or subforms/formsets
-    $elements = $this->getElements(true);
-    foreach ($elements as $element) {
-      $element->bindTo($data);
-    }
-  }
 
 
   /** Initialize with a model object, or an assoc key/value array, or nothing.
@@ -609,7 +462,6 @@ class BaseForm extends BaseFormComponent {
       #If don't want default, set explicitly to null. Else, if undefined,
       #returns strict boolean false
       if ($idEl === false) {
-        //tmpdbg("Create ID EL");
         $className = $this->name;
         $id = '';
         if ($this->base_object) {
@@ -741,6 +593,8 @@ class BaseForm extends BaseFormComponent {
   public function setElementX($key = null, $val=null, $proto=true) {
     return $this->addElementX($key,$val, $proto);
   }
+
+
   public function addElementX($key = null, $val=null, $proto=true) {
     if (!$key) {
       return $this->getElementsX($proto);
@@ -813,96 +667,23 @@ class BaseForm extends BaseFormComponent {
   }
 
   /**
-   * Makes a "collection" type subform as a template, and automatically 
-   * provides several default fields based on base model, etc:
-   * @param array $params: 
-   * @return \PKMVC\FormSet: Scrolling multi-subform template
-   */
-
-  /*
-public function makeCollectionSubform(Array $params) {
-  $elname = cln_arr_val($params,'name_segment');
-  if ($elname) {
-    $base_model = $this->getBaseModel();
-    $memberCollections = $base_model::getMemberCollections();
-    $collprops = $memberCollections[$elname];
-    $params['base_model'] =$collprops['classname']; 
-    $params['foreignkey'] =$collprops['foreignkey']; 
-    $params['scrolling'] =true; 
-  }
-  $collectionSubform = new FormSet($params);
-  return $collectionSubform;
-}
-   * 
-   */
-  /**
-   * Recursive bind (that is, setting the elemenents' value/content)
-   * of data to the array of elements of this form, key-to-key.
-   * Itereates through the "form" element array - only retrieves object data
-   * if the key exists in the form element array - to prevent unncecessary 
-   * instantiation of object elements if not used in the form.
-   * 
-   * Implementation: If the corresponding data val is a val, sets that on the 
-   * element. If the data val is a subarray (indicating nested elements),
-   * recurses into it.
-   * @param Array $elArr: The associative array (keys based on name) of elements
-   * @param Array|BaseModel $data
-   */
-  public function bindRecursiveX(&$elArr, $data) {
-    //pkdebug("ELARR:", $elArr, "DATA:", $data);
-    foreach ($elArr as $key => &$el) {
-        //pkdebug("The Key Is: [$key]; EL:", $el,"DATA [$key]:", $data[$key] );
-      #The $element $key should match the $data $key
-      if (isset($data[$key])) {
-        //pkdebug("The Key Is: [$key]; DATA:", $data );
-        
-        //pkdebug("Key: [$key] is set; EL is:", $el);
-        //if (is_array($el) && is_array($data[$key])) {
-        if (is_array($el)) {
-          $this->bindRecursive($el,$data[$key]);
-        } else if ($el instanceOf BaseFormComponent) { //BaseElement) { #Set direct value
-          //pkdebug("Binding [{$data[$key]}] to :", $el);
-          $el->bind($data[$key]);
-        } else {
-           pkdebug("Bad element to bind:",$el);
-           continue;
-        }
-      }
-
-    }
-
-  }
-  /**
    * If the instance has an instantiated ::$renderResult member, or $resultData
    * and $templateMembers, render.
    */
   public function __toString() {
     try {
-      #About to display, NOW we set values...
-      //if (isset($this->base_object)) {#Iterate props and set element vals
-        //$this->bind();
-      //}
-      if (get_class() == get_class($this)) {
-        //pkdebug("In ToString, BaseObject:", $this->getBaseObject());
-        //$this->bind();
-      }
       if ($this->getRenderResult()) {
-        //return $this->renderResult->__toString();
         return $this->renderResult;
       }
       if ($this->template) {
         if (!($this->renderResult)) {
           $this->renderResult = new RenderResult($this->renderData, $this->template);
         }
-        //return $this->renderResult->__toString();
         return $this->renderResult;
       }
       #No template, no renderResult - output default, which is all elements  
       #BUT -- if it is topLevel form, output open & close tags as well....
-      //pkdebug("IN TOSTRING: PROTO ELEMENTS", $this->elements_prot);
       $elements = $this->getElementsInst();
-      //pkdebug("IN TOSTRING: ELEMENTS", $elements);
-      //pkdebug("In TOSTRING: Elements", $elements);
       return $this->openForm().$elements.$this->closeForm();
     } catch (Exception $e) {
       $msg = $e->getMessage();
@@ -1058,20 +839,6 @@ public static function multiSubFormsSetup($collName, $itemType, $itemTemplate = 
 class SubForm extends BaseForm {
   protected $el_tag = 'fieldset';
   protected static $classDefaultAttributes = array();
-
-
-  /*
-  public function bindTo($data = null) {
-    throw new Exception ("Shouldn't be here");
-    //OLD
-    $elements = $this->getElementsProto();
-    foreach ($elements as $element){
-      $element->bindTo($data);
-    }
-     * 
-  }
-     */
-
 }
 
 /** Specifically for repeating subforms -- the __toString method includes the
@@ -1168,88 +935,10 @@ class FormSet extends SubForm {
       for ($i = 0 ; $i < $cnt ; $i ++ ) {
         $subfrm = $this->base_form->copy();
         $subfrm->replaceTemplateKey($i);
-
-
-
-
-
-
-        /*
-        $nameSegments = $this->getNameSegments();
-        $nameSegments = $subfrm->getNameSegments();
-        //tmpdbg("")
-        $templateKey = array_search(static::TPL_STR, $nameSegments); 
-        $nameSegments[$templateKey] = $i;
-        //$subfrm->addNameSegment($i);
-        $subfrm->setName($nameSegments);
-        //tmpdbg("Name Segments:", $nameSegments, "New Subform Name:", $subfrm);//->getName());
-        //$subfrm->bindTo($set);
-        */
         $this->addElementProto($subfrm);
-        //$this->elements_prot[] = $subfrm;
-        //$this->elements_inst[99] = $subfrm;
-        //$protoElements[] = 
-        /*
-        $subfrm = $this->base_form->copy();
-        $nameSegments = $subfrm->getNameSegments();
-        $templateKey = array_search(static::TPL_STR, $nameSegments); 
-        $nameSegments[$templateKey] = $i;
-        //$subfrm->addNameSegment($i);
-        $subfrm->setName($nameSegments);
-        $subfrm->bindTo($set);
-        $this->addElement($subfrm);
-         * 
-         */
-        tmpdbg("Subfrm els:", $subfrm->getElementsProto());
+        //tmpdbg("Subfrm els:", $subfrm->getElementsProto());
       }
-      //tmpdbg("Subform proto elements:", $this->getElementsProto());
-      //tmpdbg("Subform proto elements:", $this->elements_prot);
       return parent::bind($data);
-    }
-  }
-  #Bind the data for one-to-many subform
-  public function bindToX($data = null) {
-    return $this->bind($data);
-    throw new Exception ("Shouldn't be here");
-    
-    $name_segments = $this->getNameSegments();
-    if (arrayish_keys_exist($name_segments, $data)) {
-      $set = arrayish_keys_value($name_segments, $data);
-      if (!$set || !sizeOf($set)) { #Nothing to set
-        return;
-      }
-      if (!is_array($set)) {
-        $msg = "Bad src to bind: [".print_r($set, true).']';
-        // (Wait until to string can throw errors...
-        // throw new \Exception("Bad src to bind: [".print_r($src, true).']');
-        pkdebug("ERROR!!!! [$msg]");
-        trigger_error($msg);
-        die();
-      } #Okay, we have an array of data -- now create elements and bind
-      $cnt = sizeOf($set);
-      for ($i = 0 ; $i < $cnt ; $i ++ ) {
-        $subfrm = $this->base_form->copy();
-
-
-
-        $subform->replaceTemplateKey($i);
-
-
-        /*
-        $nameSegments = $subfrm->getNameSegments();
-        $templateKey = array_search(static::TPL_STR, $nameSegments); 
-        $nameSegments[$templateKey] = $i;
-        //$subfrm->addNameSegment($i);
-        $subfrm->setName($nameSegments);
-         * 
-         */
-
-
-
-
-        $subfrm->bindTo($set);
-        $this->addElement($subfrm);
-      }
     }
   }
 
@@ -1258,15 +947,4 @@ class FormSet extends SubForm {
     $template = $this->getJSTemplate();
     return "data-template='".html_encode($template)."'";
   }
-
-  /*
-  public function __toString() {
-    $idx = $this->idx;
-    if ($idx === static::TPL_STR) { #Template 
-     
-    }
-    return "<fieldset style='border:solid blue 1px;'>This is the subform</fieldset>";
-  }
-   */
-
 }

@@ -27,7 +27,6 @@ interface ElementInterface {
   /** Bind data to the form or element
    * @param: Data to bind (array or Object), or empty for default object
    */
-  public function bindTo($data = null);
   public function bind($data = null);
   public function setValues(Array $args = array(),
           $exclusions = array(), $useDefaults = true);
@@ -158,7 +157,9 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     //  $content = static::clean($content);
     //  $this->attributes['value'] = $content;
     //}
-    $this->content = $content;
+      if ($content) {
+        $this->content = $content;
+      }
     //tmpdbg("NEW CONTENT FOR element [{$this->name}] is: [{$this->content}]");
   }
 
@@ -701,21 +702,14 @@ class BaseElement extends BaseFormComponent {
    * array/object, not just the local data item.
    * @param type $src
    */
-  public function bindTo($src = null) {
+  public function bind($src = null) {
     $name_segments = $this->getNameSegments();
     $data = arrayish_keys_value($name_segments, $src);
     //pkdebug("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
     //tmpdbg("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
-    $this->setContent($data);
-  }
-
-  public function bind($arg = null) {
-    return $this->bindTo($arg);
-    /*
-    parent::bind($arg);
-    $this->setContent($arg);
-     * 
-     */
+    if (!($this->input == 'html')) {
+      $this->setContent($data);
+    }
   }
 
   public function getInputStr() {
