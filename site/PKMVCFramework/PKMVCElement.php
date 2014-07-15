@@ -123,6 +123,12 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     $this->setValues($args);
   }
 
+  /**
+   * For FormSets (one-to-many), collection elements are placeheld by a 
+   * string for an index. This replaces the template string with the given 
+   * index.
+   * @param type $key: Value to replace into template key
+   */
   public function replaceTemplateKey($key) {
     $nameSegments = $this->getNameSegments();
     $templateKey = array_search(static::TPL_STR, $nameSegments); 
@@ -147,8 +153,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * @param string $content
    */
   protected function setContent($content) {
-    //DEBUG
-    //$content = "Dinosaur!";
     //if ($this->input == 'textarea' ) {
       $this->otherAttributes['content'] = $content;
     //}
@@ -173,8 +177,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * Name segments are implemented / set/get from the name.
    * Returns an array of name segments
    */
-
-
 
   /**
    * Returns the an indexed array of the array keys (name_segments)
@@ -259,25 +261,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     }
   }
 
-  /**
-   * Performs the actual data array building/recursion
-   * TODO: Need to do somethng for collections/scrolling froms.
-   * TODO!: But more important, why do we ever need this function?
-   * @return array|scalar: The data array or subcomponent
-   */
-  /*
-  public function getValuesRecursive() {
-    if ($this instanceOf BaseElement) {
-      return $this->getContent();
-    }
-    $retarr = array();
-    foreach ($this->elements as $element) {
-      $retarr[$element->getName()] = $element->getValuesRecursive();
-    }
-    return $retarr;
-  }
-   * *
-   */
 
   /**
    * Cleans input strings for inclusion as values for HTML attributes
@@ -436,10 +419,11 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
         || in_array($key,$exclusions)) {#For some reason, we want to skip these
         continue;
       } else if (static::isValidAttribute($key)) {
+        /*
         if (!is_string($val)) {
-
           pkstack (4);
         }
+         */
         $this->attributes[$key] = static::clean($val);
       } else { #Leftover args -- save for later?
         #But don't know what they are, so don't clean
@@ -498,7 +482,8 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
     }
     foreach ($attributes as $key =>$value) {
       if (!in_array($key, $exclusions)) {
-        if ($key == 'name') {
+        //if (($key == 'name') || ($key == 'value')) {
+        if (($key == 'name')) {
           continue;
         }
         $attrStr .= " $key='$value' ";
@@ -755,6 +740,11 @@ class BaseElement extends BaseFormComponent {
       } 
       $ret[] = $val;
     } else { #Not a special type, make a regular input of the type..
+      if ($type == 'hidden') {
+        $content = $this->getContent();
+        tmpdbg("AttrStr: [$attrStr], CONTENT: [$content]");
+        pkdebug("AttrStr: [$attrStr], CONTENT: [$content]");
+      }
       $ret[] = "\n<$input type='$type' value='".$this->getContent()."' $attrStr />";
     }
     if ($labelCtl) {

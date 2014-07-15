@@ -304,7 +304,6 @@ class BaseModel extends PKMVCBase  implements ArrayAccess {
         #$collObjArr = $this->$collName; #array of collection member objects
         #If data array has no key for this collection, skip
         if (!isset($arr[unCamelCase($collName)])) {
-          //tmpdbg("NOT SET COLLANME: [$collName]?");
           continue;
         }
         $namespace = $this->getNamespaceName(); #For getting member objects
@@ -356,9 +355,7 @@ class BaseModel extends PKMVCBase  implements ArrayAccess {
       $this->traversed = false;
       $collections = $this->getCollections();
       if ($collections && is_array($collections)) {
-        pkdebug("ColLECTIONs:", $collections);
         foreach ($collections as $collection) {
-          pkdebug("ColLECTION:", $collection);
           if ($collection && is_array($collection)) {
             foreach ($collection as $item) {
               $item->untraverse();

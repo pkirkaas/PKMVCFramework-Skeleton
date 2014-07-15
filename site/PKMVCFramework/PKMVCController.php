@@ -335,6 +335,7 @@ class BaseController {
         $obj = BaseForm::submitToClass($formData);
         if (($obj instanceOf BaseModel) && ($obj->getId())) {
           $id = $obj->getId();
+          pkdebug("ID: [$id]");
         }
         return $obj;
       }
