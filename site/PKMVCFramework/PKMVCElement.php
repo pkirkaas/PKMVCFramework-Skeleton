@@ -124,7 +124,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
   }
 
   public function replaceTemplateKey($key) {
-    //tmpdbg("Replacing [$key]");
     $nameSegments = $this->getNameSegments();
     $templateKey = array_search(static::TPL_STR, $nameSegments); 
     if ($templateKey) {
@@ -160,12 +159,14 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
       if ($content) {
         $this->content = $content;
       }
-    //tmpdbg("NEW CONTENT FOR element [{$this->name}] is: [{$this->content}]");
   }
 
 
   protected function getContent() {
-    return $this->content;
+    if (is_string($this->content)) {
+      return $this->content;
+    }
+    return '';
   }
 
   /**
@@ -424,17 +425,6 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
       }
     }
     
-    //tmpdbg("This:", $this);
-
-
-
-
-
-
-
-
-
-
     #Set the "normal" attribute values first
     //$this->setAttributeVals($args);
     $this->setInstanceProperties($args);
@@ -705,8 +695,6 @@ class BaseElement extends BaseFormComponent {
   public function bind($src = null) {
     $name_segments = $this->getNameSegments();
     $data = arrayish_keys_value($name_segments, $src);
-    //pkdebug("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
-    //tmpdbg("Binding src:",$src,"To THIS:", $this, "DATA to Content:", $data, "name_segments:", $name_segments);
     if (!($this->input == 'html')) {
       $this->setContent($data);
     }
@@ -767,14 +755,13 @@ class BaseElement extends BaseFormComponent {
       } 
       $ret[] = $val;
     } else { #Not a special type, make a regular input of the type..
-      $ret[] = "\n<$input type='$type' value='{$this->content}' $attrStr />";
+      $ret[] = "\n<$input type='$type' value='".$this->getContent()."' $attrStr />";
     }
     if ($labelCtl) {
       $ret[] = "\n</div>\n";
     } else {
       $ret[] = "\n";
     }
-    //tmpdbg("THIS NAME:", $this->name,"CONTENT:", $this->content);
     return $ret;
   }
 

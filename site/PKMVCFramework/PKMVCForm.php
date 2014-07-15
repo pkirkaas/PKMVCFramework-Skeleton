@@ -487,8 +487,6 @@ class BaseForm extends BaseFormComponent {
         ));
         $this->setElementProto('submit', $submitEl);
       }
-      //tmpdbg("ID ELEMENT:", $this->getElementProto('id'));
-      //$this->bind();
     }
   }
 
@@ -711,7 +709,6 @@ class BaseForm extends BaseFormComponent {
     if (arrayish_key_exists($elName, $elements)) {
       $retval = $elements[$elName];
     } 
-      //tmpdbg("Couldn't find [$elName] in Elements. Stack:", pkstack_base(5),"Elements:", $elements);
     return $retval; #Distinguish between explicitly set NULL and not set at all
   }
 
@@ -862,6 +859,12 @@ class FormSet extends SubForm {
     $subargs = $args;
     unset($args['elements']);
     parent::__construct($args);
+    $name = $this->getName();
+    $emptyHolder = new BaseElement(array(
+        'type'=>'hidden',
+        'name'=>$name,
+      ));
+
     $name_segments = $this->getNameSegments();
     $name_segments[]=static::TPL_STR;
     $subargs['name_segments'] = $name_segments;
@@ -880,14 +883,13 @@ class FormSet extends SubForm {
   //pkdebug("SubArgs:",$subargs,"base_form:", $this->base_form);
     unset($args['elements']);
     $args['scrolling'] = true;
+    $this->addElementProto('formsetname', $emptyHolder);
     //$args['class'] = "TEST-CREATE-SUBFORM";
     //$args['name_segments'] = array("From","Formset", "Create");
     #Create default elements, like "Create Item" button
   }
 
   public function __toString() {
-    //pkdebug("InFormSet, elements:", $this->getElements(true));
-    //tmpdbg("Sample base_form OBJ:", $this->base_form);
     if (empty($this->origArgs['create'])) {
       $count = sizeof($this->getElementsInst());
       $create_label = "New Profile";
@@ -936,7 +938,6 @@ class FormSet extends SubForm {
         $subfrm = $this->base_form->copy();
         $subfrm->replaceTemplateKey($i);
         $this->addElementProto($subfrm);
-        //tmpdbg("Subfrm els:", $subfrm->getElementsProto());
       }
       return parent::bind($data);
     }

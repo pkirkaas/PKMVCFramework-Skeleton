@@ -651,7 +651,7 @@ function max_idx($arr, $next=false) {
   $keys = arrayish_keys($arr);
   foreach ($keys as $key) {
     if (is_int($key)) {
-      if (($ret === null) || ($key > $res)) {
+      if (($ret === null) || ($key > $ret)) {
         $ret = $key;
       }
     }

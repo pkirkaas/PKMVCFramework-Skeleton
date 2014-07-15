@@ -304,6 +304,7 @@ class BaseModel extends PKMVCBase  implements ArrayAccess {
         #$collObjArr = $this->$collName; #array of collection member objects
         #If data array has no key for this collection, skip
         if (!isset($arr[unCamelCase($collName)])) {
+          //tmpdbg("NOT SET COLLANME: [$collName]?");
           continue;
         }
         $namespace = $this->getNamespaceName(); #For getting member objects
