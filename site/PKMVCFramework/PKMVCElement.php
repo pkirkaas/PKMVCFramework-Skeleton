@@ -28,7 +28,7 @@ interface ElementInterface {
    * @param: Data to bind (array or Object), or empty for default object
    */
   public function bind($data = null);
-  public function setValues(Array $args = array(),
+  public function setAttributeVals(Array $args = array(),
           $exclusions = array(), $useDefaults = true);
   public function getName();
 }
@@ -64,11 +64,19 @@ interface ElementInterface {
 abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
   const TPL_STR = '__TEMPLATE__';
   
+  /**
+   *
+   * @var array: Array of valid HTML element attributes for BaseFormComponents.
+   * Can be added to by descendent classes, for example, input elements or forms.
+   */
   protected static $validAttributeNames = array('autocomplete', 'novalidate', 
       'disabled');
+
   /**
-   * @var Array: Names of class/instance attribute/members/properties that
-   * can be set by initialization
+   * @var Array: Names of Element Object/class/instance attribute/members/properties that
+   * can be set by initialization. That is, names of HTML attributes that are
+   * stored directly as $this->attrName, rather than in the attribute array.
+   * Again, can be added to by descendent classes 
    */
   protected static $instancePropertyNames = array('name', 'label', 'for',);
   //protected static $otherAttributeNames = array('name_segment', 'name_segments');
@@ -78,7 +86,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
   /**
    *
    * @var array: key/value pairs of default attributes if none explicitly set
-   * in setValues. For example, for the BaseForm class, are:
+   * in setAttributeVals. For example, for the BaseForm class, are:
    * ('method'=>'post', 'enctype'=>'multipart/form-data', etc...;
    */
   protected static $classDefaultAttributes = array();
@@ -117,10 +125,11 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
 
   public function __construct($args = null ) {
     $class = get_class($this);
-    $this->setValuesDefault();
+    $this->setAttributeValsDefault();
 
-    #set some defaults, then call set Values with rest
-    $this->setValues($args);
+    #set some defaults, then call setAttributeVals with remaining arguments to
+    #add them to the attribute array.
+    $this->setAttributeVals($args);
   }
 
   /**
@@ -171,6 +180,13 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
       return $this->content;
     }
     return '';
+  }
+
+  protected function setValue($val='') {
+    $this->value = static::clean($val);
+  }
+  protected function getValue() {
+    return static::clean($this->value);
   }
 
   /**
@@ -249,11 +265,11 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
 
   /**
    * Sets any default attributes for this element/form. Called first
-   * in ->setValues($args), so explicitly set in the args array, the 
+   * in ->setAttributeVals($args), so explicitly set in the args array, the 
    * defaults are overridden.
    * Uses the class static attribute array:  $classDefaultAttributes
    */
-  protected function setValuesDefault() {
+  protected function setAttributeValsDefault() {
     foreach (static::$classDefaultAttributes as $key => $value) {
       if (!array_key_exists($key, $this->attributes)) {
         $this->attributes[$key]=$value;
@@ -386,9 +402,9 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * be inclduded between the open and close tags
    */
 
-  public function setValues(Array $args = array(), $exclusions = array(), $useDefaults = true) {
+  public function setAttributeVals(Array $args = array(), $exclusions = array(), $useDefaults = true) {
     if ($useDefaults) {
-      $this->setValuesDefault();
+      $this->setAttributeValsDefault();
     }
     if (!$args || !is_array($args)) {
       return $this;
@@ -450,7 +466,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
    * @param array assoc $args
    * @param array indexed $exclusions
    */
-  public function setAttributeVals($args = array(), $exclusions = array()) {
+  public function setAttributeValsX($args = array(), $exclusions = array()) {
 
   }
 
@@ -506,7 +522,7 @@ abstract class BaseFormComponent extends PKMVCBase implements ElementInterface {
  * 
  * Rules for building a control/element: Build an element by giving an 
  * associative array of values in the constructor, or calling
- * "$el->setValues($assocArray);" after the empty element is created.
+ * "$el->setAttributeVals($assocArray);" after the empty element is created.
  * The args for value are an associative array of $key/value pairs, where the
  * keys can fall in several groups:
  * 
@@ -558,7 +574,7 @@ class BaseElement extends BaseFormComponent {
   /** @var array: Hack to exclude certain legitimate HTML attribute values from being 
    * set in attrString because we will be handling them specially...
    */
-  protected static $valueExcusions = array('input','type');
+  protected static $valueExcusions = array('input','type','value');
 
   /**
    * @var array: Valid form element types (Added my own: boolean, HTML, subform)
@@ -658,15 +674,15 @@ class BaseElement extends BaseFormComponent {
     parent::__construct($args);
   }
 
-  /** Sets values for this element
+  /** Sets attribute characteristics/values for this element
    * If key name is valid attribute, adds to attributer array and
    * cleans its value
    * @param array $args: Assoc array of name/value pairs
    * FOR TEXTAREA & BUTTON INPUTS! Must use special val key/name: 'content' to 
    * be inclduded between the open and close tags
    */
-  public function setValues(Array $args = array(), $exclusions = array(), $useDefaults = true) {
-    parent::setValues($args, $exclusions, $useDefaults);
+  public function setAttributueVals(Array $args = array(), $exclusions = array(), $useDefaults = true) {
+    parent::setAttributeVals($args, $exclusions, $useDefaults);
     if (($this->input == 'input') && !$this->type) {
       $this->type = 'text';
     }

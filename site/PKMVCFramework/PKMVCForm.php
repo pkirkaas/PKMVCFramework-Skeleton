@@ -63,7 +63,7 @@ use \ArrayObject;
  * 
  * To initialize a form in creation,($form = new BaseForm($argArray), 
  *  or by creating an empty ($form = new BaseForm())
- * and then calling $form->setValues($argArray), the $argArray accepts the 
+ * and then calling $form->setAttributeVals($argArray), the $argArray accepts the 
  * following format:
  * An associative array of key values. The primare keys are any valid HTML
  * form attributes ('class', 'id', 'name', etc), as well as these additional
@@ -327,12 +327,12 @@ class BaseForm extends BaseFormComponent {
    * an element instance or an array that can be used to create the element
    * @return \PKMVC\BaseForm
    */
-  public function setValues(Array $args = array(), $exclusions = array(), $useDefaults = true) {
+  public function setAttributeVals(Array $args = array(), $exclusions = array(), $useDefaults = true) {
     static $count = 0;
     if (isset($args['subform'])) {
       $useDefaults = false;
     }
-    parent::setValues($args, $exclusions, $useDefaults); #Takes care of the regular attributes
+    parent::setAttributeVals($args, $exclusions, $useDefaults); #Takes care of the regular attributes
 
     #Set elements if present....
     if (isset($args['elements'])) {

@@ -8,6 +8,14 @@ TEMPLATES:
 Allow a controller to use partial templates without requiring it's own action.
 
 
+Vocabulary:
+HTML: Tags, elements, nodes, attributes
+
+Values:
+
+
+
+
 
 
 
