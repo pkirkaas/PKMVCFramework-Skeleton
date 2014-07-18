@@ -31,6 +31,7 @@ $default_menu[] = array('route' => array('user','edit'), 'label' => 'Edit', 'log
 $default_menu[] = array('route' => array('user','logout'), 'label' => 'Logout', 'logtype' => 1, 'title' => 'Log out of your account');
 $default_menu[] = array('route' => array('test','index'), 'label' => 'Test...', 'logtype' => 0, 'title' => 'Test Something');
 $default_menu[] = array('route' => array('admin','sql'), 'label' => 'SQL Out', 'logtype' => 0, 'title' => 'Get SQL Suggestions');
+$default_menu[] = array('route' => array('admin','formarray'), 'label' => 'Edit Form Arrays', 'logtype' => 0, 'title' => 'Edit Form Arrays');
 
 $config = array();
 $config['menus'] = array();

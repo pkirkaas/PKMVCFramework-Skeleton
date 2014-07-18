@@ -43,5 +43,18 @@ class  AdminController extends AppController {
     $data['sqlMod'] = $sqlStrMod;
     return $data;
   }
-  //put your code here
+  public function formarrayAction() {
+    // Use var_export()
+    $data = array();
+    $formarray = array();
+
+    $base = $_SERVER['DOCUMENT_ROOT'];
+    $formBase = $base.'/forms/FormArrays.php';
+    include ($formBase);
+    //var_export();
+
+    $data['form'] = $formarray;
+    return $data;
+
+  }
 }

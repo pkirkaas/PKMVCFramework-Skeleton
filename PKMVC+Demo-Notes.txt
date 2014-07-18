@@ -10,9 +10,11 @@ Allow a controller to use partial templates without requiring it's own action.
 
 Vocabulary:
 HTML: Tags, elements, nodes, attributes
+PHP Objects: Call all object member variables "properties", to avoid confusion with HTML Attributes.
 
 Values:
-
+$this->value: for inputs: htmlcleaned
+$this->content: for TextArea & Buttons, between open and close tags. Not HTML cleaned (by default);
 
 
 

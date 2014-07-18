@@ -283,7 +283,8 @@ function getHtmlTagWhitelist() {
  * and recursively trims it and strips tags except from a whitelist
  * @param type $input input string or array.
  */
-function htmlclean ($arr, $usehtmlspecchars = false) {
+//function htmlclean ($arr, $usehtmlspecchars = false) {
+function html_clean (&$arr, $usehtmlspecchars = false) {
   $whitelist = getHtmlTagWhitelist();
   if (!$arr) return $arr;
   if (is_string($arr) || is_numeric($arr)) {
@@ -297,8 +298,8 @@ function htmlclean ($arr, $usehtmlspecchars = false) {
     throw new Exception ("Unexpected input to htmlclean:".pkvardump($arr));
   }
   $retarr = array();
-  foreach ($arr as $key => $value) {
-    $retarr[$key] = htmlclean($value);
+  foreach ($arr as $key => &$value) {
+    $retarr[$key] = html_clean($value,$usehtmlspecchars);
   }
   return $retarr;
 }
@@ -444,20 +445,6 @@ function makePicker($name,$key,$val,$arr, $selected=null, $none=null) {
 }
 
 
-/** Performs the equivalent of "filter_input($type = INPUT_REQUEST,...) if that
- * existed.
- * @param type $var
- * @param type $filter
- * @param type $options
- */
-function filter_request($var, $filter = FILTER_DEFAULT, $options = null) {
-  $res = filter_input(INPUT_GET, $var, $filter, $options);
-  if ($res === null) $res=filter_input(INPUT_POST, $var, $filter, $options);
-  if ($res === null) $res=filter_input(INPUT_COOKIE, $var, $filter, $options);
-  return $res;
-}
-
-
 
 /** No guarantee, but approximate heuristic to determine if an array is
  * associative or integer indexed.
@@ -514,6 +501,33 @@ function cln_str($str, $filter = FILTER_SANITIZE_STRING) {
   return filter_var($str, $filter);
 }
 
+
+/**
+ * Filters a POST input, according to the parameters
+ */
+function filter_post($key, $filter=FILTER_SANITIZE_FULL_SPECIAL_CHARS, $options = null) {
+  return filter_input(INPUT_POST, $key, $filter, $options);
+}
+/**
+ * Filters a GET input, according to the parameters
+ */
+function filter_get($key, $filter = FILTER_SANITIZE_FULL_SPECIAL_CHARS, $options = null) {
+  return filter_input(INPUT_GET, $key, $filter, $options);
+}
+
+/** Performs the equivalent of "filter_input($type = INPUT_REQUEST,...) if that
+ * existed.
+ * @param string $key: The input key for GET/POST/COOKIE
+ * @param integer $filter: The filter type. Defaults to FILTER_SANITIZE_FULL_SPECIAL_CHARS
+ * @param mixed $options: Optional additional options for "filter_input", if any.
+ * @return: The sanitized result, or null.
+ */
+function filter_request($var, $filter = FILTER_SANITIZE_FULL_SPECIAL_CHARS, $options = null) {
+  $res = filter_input(INPUT_GET, $var, $filter, $options);
+  if ($res === null) $res=filter_input(INPUT_POST, $var, $filter, $options);
+  if ($res === null) $res=filter_input(INPUT_COOKIE, $var, $filter, $options);
+  return $res;
+}
 
 
 function cln_arr_val(Array $arr, $key, $filter = FILTER_SANITIZE_STRING) {
@@ -664,13 +678,12 @@ function max_idx($arr, $next=false) {
 }
  
 
+/**
+ * Basically, "array_keys()" for objects that implement Iterator
+ * @param array $arr: The array or array-like object
+ * @return Array: The keys of the array or array like object
+ */
 function arrayish_keys($arr) {
-  /*
-  if (!is_array($arr) && !($arr instanceOf Iterator)) {
-    throw new Exception ("Uniterable Arg");
-  }
-   * 
-   */
   if (!sizeOf($arr)) {
     return array();
   }
