@@ -497,7 +497,7 @@ function to_int ($arg) {
  * @param string $str: The string to clean
  * @return string: The clean string.
  */
-function cln_str($str, $filter = FILTER_SANITIZE_STRING) {
+function cln_str($str, $filter = FILTER_SANITIZE_FULL_SPECIAL_CHARS) {
   return filter_var($str, $filter);
 }
 
@@ -529,7 +529,23 @@ function filter_request($var, $filter = FILTER_SANITIZE_FULL_SPECIAL_CHARS, $opt
   return $res;
 }
 
+function filter_server_url($var, $default = '/', $filter=FILTER_VALIDATE_URL, $options = null) {
+  $ret = filter_input(INPUT_SERVER, $var, $filter, $options);
+  if (!$ret) $ret = $default;
+  return $ret;
 
+}
+
+function filter_server($var, $filter= FILTER_SANITIZE_FULL_SPECIAL_CHARS, $options = null) {
+  return filter_input(INPUT_SERVER, $var, $filter, $options);
+}
+
+function filter_url($url) {
+  if (filter_var($url, FILTER_VALIDATE_URL)) {
+    return $url;
+  }
+  return '/';
+}
 function cln_arr_val(Array $arr, $key, $filter = FILTER_SANITIZE_STRING) {
   if (!array_key_exists($key, $arr)) {
     return null;
@@ -692,4 +708,103 @@ function arrayish_keys($arr) {
     $keys[] = $key;
   }
   return $keys;
+}
+
+/**
+ * Returns a list of all declared classes that are descendants/instances Of
+ * the named class
+ * @TODO: Should really return a hierarchy instead of a flat array..
+ * 
+ * @param string $class: The class to check for descendants of...
+ * @return boolean|array: all declared classes that are descendants of the 
+ * given class
+ */
+function get_descendants($class) {
+  if (!class_exists($class)) {
+    return false;
+  }
+  $classes = get_declared_classes();
+  $descendants = array();
+  foreach ($classes as $aclass) {
+    if ($aclass instanceOf $class) {
+      $descendants[] = $aclass;
+    }
+  }
+  return $descendants;
+}
+
+
+function submitted($onlyPost = false) {
+  if ((filter_server('REQUEST_METHOD') == 'POST') || (sizeof($_GET) && !$onlyPost)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+#Form CSRF NONCE functions -- two types - 2 pure low-level PHP Nonce generating
+#and checking, and 2 form interactive function which generate the hidden control
+#and redirect if NONCE not satisfied.
+
+
+/** Just make a NONCE
+ * 
+ * @return String: Hex string for inclusion in hidden NONCE input, and for
+ * setting session variable.
+ */
+function makeNonce() {
+  $bytes = openssl_random_pseudo_bytes(128);
+  $hex   = bin2hex($bytes);
+  return $hex;
+}
+
+/**
+ * Calls "makeNonce()" to generate the NONCE, create a hidden input string, and
+ * set the SESSION variable with the generated NONCE value
+ * @return String: The hidden NONCE input control for direct echoing in a form
+ */
+function formCreateNonce() {
+  $nonce = makeNonce();
+  $control = "<input type='hidden' name='form_nonce' value='$nonce' />\n";
+  $_SESSION['form_nonce'] = $nonce;
+  return $control;
+}
+
+/**
+ * Checks the submitted nonce with the stored session nonce.
+ * @return boolean: Whether the submitted nonce matches the SESSION (expected)
+ * NONCE
+ */
+function checkNonce() {
+  $form_nonce = $_SESSION['form_nonce'];
+  $request_nonce = filter_request('form_nonce');
+  if ($request_nonce == $form_nonce) {
+    return true;
+  } else {
+    pkdebug("FORM NONCE:'$form_nonce'; REQUEST_NONCE: '$request_nonce'");
+    return false;
+  }
+}
+
+/**
+ * Processes the form submission and redirects if NONCE requirement not met.
+ * If not a post, returns successfully. If POSTed NONCE value exists but
+ * doesn't match SESSSION NONCE, redirects to default NONCE mismatch page.
+ * If POSTed NONCE doesn't exist, either returns "FALSE", or redirects to 
+ * NONCE mismatch page, depending on options. If POSTed NONCE exists and matches
+ * SESSION NONCE, returns TRUE.
+ */
+function formProcessNonce($nonceFailPage = 'nonce_fail', $ignoreMissing = true) {
+  if (!submitted(true)) {
+    return true;
+  }
+
+  $noncePass = checkNonce();
+  $baseUrl = getBaseUrl();
+  if (!$noncePass) {
+    die("<h2>NONCE failed; see log</h2>");
+    header("Location: $baseUrl/$nonceFailPage");
+  }
+  return true;
+
 }

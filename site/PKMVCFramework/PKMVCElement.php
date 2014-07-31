@@ -674,6 +674,15 @@ class BaseElement extends BaseFormComponent {
     parent::__construct($args);
   }
 
+  /**
+   * 
+   * @return array: all valid input names. For use with form builder --
+   * eventually descend inheretance hierarchy...
+   */
+  public static function getValidInputs() {
+    return static::$validInputs;
+  }
+
   /** Sets attribute characteristics/values for this element
    * If key name is valid attribute, adds to attributer array and
    * cleans its value

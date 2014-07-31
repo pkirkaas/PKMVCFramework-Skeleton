@@ -29,6 +29,9 @@ $('.base-collection-set').on('click', '.delete-item-button', function() {
 $('.add-item-button').on('click', newItemFromTemplate);
 
 function newItemFromTemplate() {
+  if (typeof PKMVC_TPL_STR === "undefined") {
+    PKMVC_TPL_STR = "__TEMPLATE_JS__";
+  }
   //alert("Clicked add item button..");
   var template = $(this).closest('.base-collection-set').find('.form-template').data('item-template');
   console.log("And this is...",this,"; and the template is:",template);

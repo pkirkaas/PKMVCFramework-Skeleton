@@ -43,10 +43,22 @@ class  AdminController extends AppController {
     $data['sqlMod'] = $sqlStrMod;
     return $data;
   }
+
+  /**
+   * Creates/Edits PHP arrays to define forms. 
+   * TODO: Make way more configurable, esp wrt form file names & location 
+   * @return array
+   */
   public function formarrayAction() {
     // Use var_export()
+    $formfile = $_SERVER['DOCUMENT_ROOT'].'/forms/FormArrays.php';
+    #TODO++!! Make safe and reasonable!
+    #TODO++!! Yes, I mean REALLY. Hate this for now. But the form array is $formarray
+    include ($formfile);
     $data = array();
-    $formarray = array();
+    if (!isset($formarray)) {
+      $formarray = array();
+    }
 
     $base = $_SERVER['DOCUMENT_ROOT'];
     $formBase = $base.'/forms/FormArrays.php';
@@ -56,5 +68,13 @@ class  AdminController extends AppController {
     $data['form'] = $formarray;
     return $data;
 
+  }
+
+
+  public function getFormOptions() {
+    $formOptions = array();
+    $inputs = BaseElement::getValidInputs();
+    $inputAttributes = '';
+    
   }
 }

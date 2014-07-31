@@ -48,6 +48,14 @@ class PKMVCBase {
     }
     return $ancestors[$idx];
   }
+
+  /** Get all declared descendants of the current class
+   * @return array: All declared descendants.
+   */
+  public static function getDescendants() {
+    $class = get_called_class();
+    return get_descendants($class);
+  }
   
   /**
    * Recurse up through inheretence hierarchy and merge static arrays of
